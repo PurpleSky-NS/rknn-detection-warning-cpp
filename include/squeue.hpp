@@ -37,13 +37,12 @@ public:
     }
     
     std::optional<T> GetNoWait(IdType &id)const{
-        std::optional<T> ret;
         std::shared_lock<std::shared_mutex> lock(_mutex);
         if(id != _id){
             id = _id;
-            ret = _value;
+            return _value;
         }
-        return ret;
+        return std::nullopt;
     }
 
 private:
