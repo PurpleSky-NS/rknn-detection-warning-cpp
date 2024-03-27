@@ -89,7 +89,6 @@ inline void Yolov7::RecalcScale(const cv::Size &size)
 template<typename DataType>
 ResultType Yolov7::Postprocess4Grid()const
 {
-    Timer<std::chrono::milliseconds> t("Post: ");
     auto data = static_cast<DataType*>(_output[0].buf);
     auto [r, resize, padding] = _cachedScale;
     std::vector<Object> objects;
