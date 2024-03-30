@@ -12,8 +12,9 @@ public:
 
 protected:
     void _Run(){
-        auto f = std::async([&](){_pusher.PushFrame(_queue.Get(_queueId));});
-        std::this_thread::sleep_for(_sleepDuration);
+        _pusher.PushFrame(_queue.Get(_queueId));
+        // auto f = std::async([&](){});
+        // std::this_thread::sleep_for(_sleepDuration);
     }
 private:
     PusherType &_pusher;

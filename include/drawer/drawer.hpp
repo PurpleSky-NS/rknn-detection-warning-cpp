@@ -32,5 +32,4 @@ private:
     typename InputQueueType::DataType _input;
     const InputQueueType &_inputQueue;
     OutputQueueType &_outputQueue;
-    
 };

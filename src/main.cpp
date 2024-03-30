@@ -6,6 +6,7 @@
 #include <chrono>
 #include <fstream>
 #include <spdlog/spdlog.h>
+#include <argparse/argparse.hpp>
 #include "stream/puller/opencv.h"
 #include "stream/pusher/opencv.h"
 #include "stream/puller/puller.hpp"
@@ -14,6 +15,7 @@
 #include "detect/detector.hpp"
 #include "drawer/opencv.h"
 #include "drawer/drawer.hpp"
+// #include "drawer/cxvFont.hpp"
 #include "timer.h"
 #include "squeue.hpp"
 // extern "C" {
@@ -39,29 +41,64 @@
 //     cv::imwrite("what.png", image);
 // }
 
-void test()
-{
-}
+// int main(int argc, char const *argv[])
+// {
+//     argparse::ArgumentParser program("program_name");
+
+//     program.add_argument("-s", "--square")
+//         .help("display the square of a given integer")
+//         .scan<'i', int>();
+
+//     try {
+//         program.parse_args(argc, argv);
+//     }
+//     catch (const std::exception& err) {
+//         std::cerr << err.what() << std::endl;
+//         std::cerr << program;
+//         return 1;
+//     }
+
+//     auto input = program.get<int>("square");
+//     std::cout << (input * input) << std::endl;
+//     return 0;
+// }
 
 int main(int argc, char const *argv[])
 {
     spdlog::set_level(spdlog::level::debug);
     spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [thread %t] %v");
+    
+    argparse::ArgumentParser program("Edge Warning");
 
-    Yolov7 detector("best.deploy.i8.rknn");
-    // Yolov7 detector("/home/purple/project/nvrpro-airockchip-yolov7-rknn/src/detect/model.rknn");
-    detector.SetAnchors("anchors.txt");
-    // detector.SetAnchors("/home/purple/project/nvrpro-airockchip-yolov7-rknn/src/detect/anchors.txt");
-    detector.SetClasses("classes.txt");
-    detector.SetObjThresh(0.65);
+    program.add_argument("--model").default_value("model.rknn").help("RKNN模型");
+    program.add_argument("--anchors_file").default_value("anchors.txt").help("Anchors文件位置");
+    program.add_argument("--classes_file").default_value("classes.txt").help("Classes文件位置");
+    program.add_argument("--obj_thresh").default_value(0.65f).scan<'f', float>().help("类别阈值");
+
+    program.add_argument("--input").required().help("输入视频流");
+    program.add_argument("--output").required().help("输出视频流");
+
+    try {
+        program.parse_args(argc, argv);
+    }
+    catch (const std::exception& err) {
+        spdlog::critical(err.what());
+        spdlog::critical(program.help().str());
+        return 1;
+    }
+
+    Yolov7 detector(program.get("model"));
+    detector.SetAnchors(program.get("anchors_file"));
+    detector.SetClasses(program.get("classes_file"));
+    detector.SetObjThresh(program.get<float>("--obj_thresh"));
 
     SQueue<cv::Mat> inputSQ, outputSQ;
     SQueue<ResultType> resultSQ;
 
     // 拉流 
-    OpencvPuller puller("rtsp://admin:a123456789@192.168.1.65:554/Streaming/Channels/101?transportmode=unicast&profile=Profile_1");
+    OpencvPuller puller(program.get("input"));
     // 推流
-    OpencvPusher pusher(std::string("rtmp://localhost/live/") + argv[1], puller.GetWidth(), puller.GetHeight(), puller.GetFPS());
+    OpencvPusher pusher(program.get("output"), puller.GetWidth(), puller.GetHeight(), puller.GetFPS());
     // 绘图
     OpencvDrawer drawer;
 
@@ -69,7 +106,6 @@ int main(int argc, char const *argv[])
     Pusher<decltype(pusher), decltype(outputSQ)> tpusher(pusher, outputSQ);
     Detector<decltype(detector), decltype(inputSQ), decltype(resultSQ)> tdetector(detector, inputSQ, resultSQ);
     Drawer<decltype(drawer), decltype(resultSQ), decltype(inputSQ), decltype(inputSQ)> tdrawer(drawer, resultSQ, inputSQ, outputSQ);
-    
 
     tpuller.Wait();
     tpusher.Wait();

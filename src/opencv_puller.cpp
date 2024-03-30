@@ -4,10 +4,10 @@
 
 OpencvPuller::OpencvPuller(const std::string &source): _frameID(0)
 {
-    if(InitOpencvBackend(source))
-        _getFrameFn = &OpencvPuller::OpencvParseFrame;
-    else if(InitFFmpegBackend(source))
+    if(InitFFmpegBackend(source))
         _getFrameFn = &OpencvPuller::FFmpegParseFrame;
+    else if(InitOpencvBackend(source))
+        _getFrameFn = &OpencvPuller::OpencvParseFrame;
     else
         throw std::runtime_error("拉取视频流失败");
     CheckStreamProp();
