@@ -6,50 +6,55 @@
 #include <condition_variable>
 #include <optional>
 
-// 模板类必须包含默认构造函数，复制构造函数（取出时会进行复制构造）、=运算符号（分情况根据需求可实现左值/右值版本）
-template<typename T>
+template<typename... Tps>
 class SQueue
 {
 public:
-    using IdType = int;
-    using DataType = T;
-    static IdType DEFAULT_ID_VALUE;
+    struct DataID{
+        int id = 0;
+    };
+    // 加上shared_ptr的类型元组
+    using ValueTupleType = std::tuple<std::shared_ptr<Tps>...>;
+    // 上述元组中的第一个类型
+    using ValueType = typename std::tuple_element<0, ValueTupleType>::type;
+    // 不加shared_ptr的类型元组
+    using DataTupleType = std::tuple<Tps...>;
+    // 上述元组中的第一个类型
+    using DataType = typename std::tuple_element<0, DataTupleType>::type;
 
-    SQueue(): _id(DEFAULT_ID_VALUE) {}
+    SQueue() = default;
     SQueue(const SQueue&)=delete;
     SQueue(SQueue&&)=delete;
     
     // 可传入一个左值或者一个右值
-    template<typename TP>
-    void Put(TP &&t){
+    template<typename... SPs>
+    void Put(SPs&&... values){
         std::unique_lock<std::shared_mutex> lock(_mutex);
-        _value = std::forward<TP>(t);
-        ++_id;
-        _cond_for_new.notify_all();
+        _values = std::make_tuple(values...);
+        ++_id.id;
+        _condForNew.notify_all();
     }
     
-    T Get(IdType &id)const{
+    ValueTupleType Get(DataID &id)const{
         std::shared_lock<std::shared_mutex> lock(_mutex);
-        if(id == _id)
-            _cond_for_new.wait(lock);
-        id = _id;
-        return _value;
+        if(id.id == _id.id)
+            _condForNew.wait(lock);
+        id.id = _id.id;
+        return _values;
     }
     
-    std::optional<T> GetNoWait(IdType &id)const{
+    std::optional<ValueTupleType> GetNoWait(DataID &id)const{
         std::shared_lock<std::shared_mutex> lock(_mutex);
-        if(id != _id){
-            id = _id;
-            return _value;
+        if(id.id != _id.id){
+            id.id = _id.id;
+            return _values;
         }
         return std::nullopt;
     }
 
 private:
-    IdType _id;
-    T _value;
+    DataID _id;
+    ValueTupleType _values;
     mutable std::shared_mutex _mutex;
-    mutable std::condition_variable_any _cond_for_new;
+    mutable std::condition_variable_any _condForNew;
 };
-template<typename T>
-typename SQueue<T>::IdType SQueue<T>::DEFAULT_ID_VALUE = 0;

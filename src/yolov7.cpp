@@ -173,6 +173,11 @@ ResultType Yolov7::Detect(const cv::Mat &image)
     return Postprocess4Outs<float16_t>();
 }
 
+std::shared_ptr<ResultType> Yolov7::Detect(std::shared_ptr<const cv::Mat> image)
+{
+    return std::make_shared<ResultType>(Detect(*image));
+}
+
 cv::Mat Yolov7::Preprocess(const cv::Mat &image)const
 {
     cv::Mat dst;
@@ -193,18 +198,18 @@ void Yolov7::NMS(ResultType &objects)const
             auto &cmp = *cmpIter;
             // translate point by maxLength * boxes[0].classIndex to
             // avoid bumping into two boxes of different classes
-            float baseX = base.x + _modelSize * base.classIndex;
-            float baseY = base.y + _modelSize * base.classIndex;
-            float cmpX = cmp.x + _modelSize * cmp.classIndex;
-            float cmpY = cmp.y + _modelSize * cmp.classIndex;
+            float baseX = base.box.x + _modelSize * base.classIndex;
+            float baseY = base.box.y + _modelSize * base.classIndex;
+            float cmpX = cmp.box.x + _modelSize * cmp.classIndex;
+            float cmpY = cmp.box.y + _modelSize * cmp.classIndex;
 
             // the overlapping part of the two boxes
             float xLeft = std::max(baseX, cmpX);
             float yTop = std::max(baseY, cmpY);
-            float xRight = std::min(baseX + base.w, cmpX + cmp.w);
-            float yBottom = std::min(baseY + base.h, cmpY + cmp.h);
+            float xRight = std::min(baseX + base.box.w, cmpX + cmp.box.w);
+            float yBottom = std::min(baseY + base.box.h, cmpY + cmp.box.h);
             float area = std::max(0.0f, xRight - xLeft) * std::max(0.0f, yBottom - yTop);
-            float iou =  area / (base.w * base.h + cmp.w * cmp.h - area);
+            float iou =  area / (base.box.w * base.box.h + cmp.box.w * cmp.box.h - area);
             // filter boxes by NMS threshold
             if (iou > _nmsThresh) 
                 cmpIter = objects.erase(cmpIter);

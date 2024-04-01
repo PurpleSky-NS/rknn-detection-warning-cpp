@@ -34,6 +34,7 @@ public:
     bool SetNMSThresh(float conf);
 
     ResultType Detect(const cv::Mat &image);
+    std::shared_ptr<ResultType> Detect(std::shared_ptr<const cv::Mat> image);
 
 private:
     using Scale = std::tuple<double, cv::Size, cv::Vec4w>;

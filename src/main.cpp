@@ -13,11 +13,12 @@
 #include "stream/pusher/pusher.hpp"
 #include "detect/yolov7.h"
 #include "detect/detector.hpp"
-#include "drawer/opencv.h"
-#include "drawer/drawer.hpp"
+#include "draw/opencv.h"
+#include "draw/drawer.hpp"
 // #include "drawer/cxvFont.hpp"
 #include "timer.h"
 #include "squeue.hpp"
+#include <ulid/ulid.hh>
 // extern "C" {
 // #include <libavcodec/avcodec.h>
 // #include <libavformat/avformat.h>
@@ -41,25 +42,18 @@
 //     cv::imwrite("what.png", image);
 // }
 
+
+// template<typename... Tps>
+// std::tuple<Tps...> mt(Tps &&... values)
+// {
+//     return std::make_tuple(values...);
+// }
+
+
 // int main(int argc, char const *argv[])
 // {
-//     argparse::ArgumentParser program("program_name");
-
-//     program.add_argument("-s", "--square")
-//         .help("display the square of a given integer")
-//         .scan<'i', int>();
-
-//     try {
-//         program.parse_args(argc, argv);
-//     }
-//     catch (const std::exception& err) {
-//         std::cerr << err.what() << std::endl;
-//         std::cerr << program;
-//         return 1;
-//     }
-
-//     auto input = program.get<int>("square");
-//     std::cout << (input * input) << std::endl;
+//     auto [a, b] = mt(1, "aaa");
+//     std::cout << a << b << std::endl;
 //     return 0;
 // }
 
@@ -75,8 +69,10 @@ int main(int argc, char const *argv[])
     program.add_argument("--classes_file").default_value("classes.txt").help("Classes文件位置");
     program.add_argument("--obj_thresh").default_value(0.65f).scan<'f', float>().help("类别阈值");
 
-    program.add_argument("--input").required().help("输入视频流");
-    program.add_argument("--output").required().help("输出视频流");
+    // program.add_argument("--input").required().help("输入视频流");
+    // program.add_argument("--output").required().help("输出视频流");
+    program.add_argument("--input").default_value("rtsp://admin:a123456789@192.168.1.65:554/Streaming/Channels/101?transportmode=unicast&profile=Profile_1").help("输入视频流");
+    program.add_argument("--output").default_value("rtmp://192.168.1.173/live/1699323368155858390").help("输出视频流");
 
     try {
         program.parse_args(argc, argv);
@@ -105,7 +101,7 @@ int main(int argc, char const *argv[])
     Puller<decltype(puller), decltype(inputSQ)> tpuller(puller, inputSQ);
     Pusher<decltype(pusher), decltype(outputSQ)> tpusher(pusher, outputSQ);
     Detector<decltype(detector), decltype(inputSQ), decltype(resultSQ)> tdetector(detector, inputSQ, resultSQ);
-    Drawer<decltype(drawer), decltype(resultSQ), decltype(inputSQ), decltype(inputSQ)> tdrawer(drawer, resultSQ, inputSQ, outputSQ);
+    Drawer<decltype(drawer), decltype(resultSQ), decltype(inputSQ), decltype(outputSQ)> tdrawer(drawer, resultSQ, inputSQ, outputSQ);
 
     tpuller.Wait();
     tpusher.Wait();

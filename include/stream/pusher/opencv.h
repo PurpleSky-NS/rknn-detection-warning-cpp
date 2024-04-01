@@ -13,7 +13,7 @@ public:
     OpencvPusher(OpencvPusher&&);
     ~OpencvPusher();
 
-    void PushFrame(const cv::Mat &frame);
+    void PushFrame(std::shared_ptr<const cv::Mat> frame);
     OpencvPusher &operator<<(const cv::Mat &frame);
 
     inline uint GetWidth()const;

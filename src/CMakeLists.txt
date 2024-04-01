@@ -15,6 +15,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 aux_source_directory(. SRC_LIST)
 add_executable(main ${SRC_LIST})
+# add_executable(main main.cpp)
 
 target_link_libraries(main ${OpenCV_LIBS}) 
 # target_link_libraries(main ${FREETYPE_LIBRARIES}) 

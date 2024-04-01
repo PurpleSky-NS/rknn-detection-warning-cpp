@@ -10,7 +10,7 @@ public:
     OpencvDrawer(const OpencvDrawer&)=default;
     OpencvDrawer(OpencvDrawer&&)=default;
     
-    //直接在原图上绘制
-    void DrawFrame(cv::Mat &frame, const ResultType &results);
+    //不能直接在原图上绘制
+    std::shared_ptr<cv::Mat> DrawFrame(std::shared_ptr<cv::Mat> frame, std::shared_ptr<const ResultType> results);
 
 };

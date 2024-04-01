@@ -8,16 +8,15 @@ class Detector: public Runner
 {
 public:
     Detector(DetectorType &detector, const FrameQueueType &frameQueue, ResultQueueType &resultQueue): 
-        _detector(detector), _frameQueueId(FrameQueueType::DEFAULT_ID_VALUE), _frameQueue(frameQueue), _resultQueue(resultQueue) {}
+        _detector(detector), _frameQueue(frameQueue), _resultQueue(resultQueue) {}
 
 protected:
     void _Run(){
-        auto r = _detector.Detect(_frameQueue.Get(_frameQueueId));
-        _resultQueue.Put(r);
+        _resultQueue.Put(_detector.Detect(std::get<0>(_frameQueue.Get(_frameQueueId))));
     }
 private:
     DetectorType &_detector;
-    typename FrameQueueType::IdType _frameQueueId = 0;
+    typename FrameQueueType::DataID _frameQueueId;
     const FrameQueueType &_frameQueue;
     ResultQueueType &_resultQueue;
 };

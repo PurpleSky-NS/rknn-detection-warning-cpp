@@ -31,9 +31,9 @@ OpencvPusher::~OpencvPusher()
     _ffProc = nullptr;
 }
 
-void OpencvPusher::PushFrame(const cv::Mat &frame)
+void OpencvPusher::PushFrame(std::shared_ptr<const cv::Mat> frame)
 {
-    *this << frame;
+    *this << *frame;
 }
 
 OpencvPusher &OpencvPusher::operator<<(const cv::Mat &frame)

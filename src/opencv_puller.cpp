@@ -33,11 +33,11 @@ OpencvPuller &OpencvPuller::operator>>(cv::Mat &frame)
     return *this;
 }
 
-cv::Mat OpencvPuller::GetFrame()
+std::shared_ptr<cv::Mat> OpencvPuller::GetFrame()
 {
     cv::Mat frame;
     *this >> frame;
-    return frame;
+    return std::make_shared<cv::Mat>(frame);
 }
 
 bool OpencvPuller::InitFFmpegBackend(const std::string &source)

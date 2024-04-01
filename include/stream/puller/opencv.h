@@ -13,7 +13,7 @@ public:
     
     //有下面两种方式获取帧
     OpencvPuller &operator>>(cv::Mat &frame);
-    cv::Mat GetFrame();
+    std::shared_ptr<cv::Mat> GetFrame();
 
     //每次获取完帧之后，这个数会涨
     inline size_t GetFrameID()const;
