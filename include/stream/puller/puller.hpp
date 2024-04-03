@@ -10,7 +10,7 @@ public:
     Puller(PullerType &puller, QueueType &queue): _puller(puller), _queue(queue) {}
 
 protected:
-    void _Run(){
+    void Run(){
         _queue.Put(_puller.GetFrame());
     }
 private:

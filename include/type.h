@@ -20,10 +20,10 @@ struct Box{
 };
 
 struct Object {
-    Box box;
-    float score;
-    size_t classIndex;
-    std::string className;
+    Box box;  // 位置
+    double score;  // 置信度
+    size_t classIndex;  // 类别ID
+    std::string className;  // 类别名称
 };
 
 using ResultType = std::vector<Object>;

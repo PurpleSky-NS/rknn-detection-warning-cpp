@@ -1,5 +1,6 @@
-#include <sstream>
 #include "stream/pusher/opencv.h"
+
+#include <sstream>
 
 OpencvPusher::OpencvPusher(const std::string &output, uint w, uint h, double fps): _w(w), _h(h), _fps(fps), _dataSize(3*w*h)
 {

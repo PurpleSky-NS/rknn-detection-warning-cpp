@@ -1,6 +1,6 @@
-#include <cctype>
 #include "stream/puller/opencv.h"
 
+#include <cctype>
 
 OpencvPuller::OpencvPuller(const std::string &source): _frameID(0)
 {

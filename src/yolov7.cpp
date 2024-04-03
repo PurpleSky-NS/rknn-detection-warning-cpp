@@ -1,9 +1,9 @@
+#include "detect/yolov7.h"
+
 #include <exception>
 #include <fstream>
 #include <spdlog/spdlog.h>
-#include "detect/yolov7.h"
 #include "timer.h"
-
 
 Yolov7::Yolov7(const std::string &modelPath)
 {

@@ -1,5 +1,6 @@
-#include <iostream>
 #include "stream/ffutils.h"
+
+#include <iostream>
 
 FFmpegStreamer::FFmpegStreamer(const std::string &url, bool dumpFmt)
 {

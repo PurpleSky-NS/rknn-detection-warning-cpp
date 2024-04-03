@@ -11,7 +11,7 @@ public:
     Pusher(PusherType &pusher, QueueType &queue): _pusher(pusher), _queue(queue), _sleepDuration(std::chrono::milliseconds(static_cast<int>(1000. / pusher.GetFPS()))) {}
 
 protected:
-    void _Run(){
+    void Run(){
         _pusher.PushFrame(std::get<0>(_queue.Get(_queueId)));
         // auto f = std::async([&](){});
         // std::this_thread::sleep_for(_sleepDuration);

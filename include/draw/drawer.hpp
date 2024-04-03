@@ -14,13 +14,12 @@ public:
         _outputQueue(outputQueue) {}
 
 protected:
-    void _Run(){
+    void Run(){
         auto [input] = _inputQueue.Get(_inputQueueId);
         if(auto results = _resultQueue.GetNoWait(_resultQueueId); results)
             _results = std::get<0>(*results);
         _outputQueue.Put(_drawer.DrawFrame(input, _results));
     }
-
 private:
     DrawerType &_drawer;
     typename ResultQueueType::DataID _resultQueueId;

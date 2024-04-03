@@ -7,16 +7,18 @@ template<typename DetectorType, typename FrameQueueType, typename ResultQueueTyp
 class Detector: public Runner
 {
 public:
-    Detector(DetectorType &detector, const FrameQueueType &frameQueue, ResultQueueType &resultQueue): 
-        _detector(detector), _frameQueue(frameQueue), _resultQueue(resultQueue) {}
+    Detector(DetectorType &detector, const FrameQueueType &frameQueue, ResultQueueType &resultFrameQueue): 
+        _detector(detector), _frameQueue(frameQueue), _resultFrameQueue(resultFrameQueue) {}
 
 protected:
-    void _Run(){
-        _resultQueue.Put(_detector.Detect(std::get<0>(_frameQueue.Get(_frameQueueId))));
+    void Run(){
+        auto [frame] = _frameQueue.Get(_frameQueueId);
+        auto result = _detector.Detect(frame);
+        _resultFrameQueue.Put(result, frame);
     }
 private:
     DetectorType &_detector;
     typename FrameQueueType::DataID _frameQueueId;
     const FrameQueueType &_frameQueue;
-    ResultQueueType &_resultQueue;
+    ResultQueueType &_resultFrameQueue;
 };

@@ -6,7 +6,7 @@
 class Runner
 {
 public:
-    Runner(): _running(true), _thread(&Runner::_RunThread, this) {}
+    Runner(): _running(true), _thread(&Runner::RunThread, this) {}
     virtual ~Runner(){
         Stop();
     }
@@ -21,14 +21,14 @@ public:
     }
 
 protected:
-    virtual void _Run() = 0;
+    virtual void Run() = 0;
 private:
     bool _running;
     std::thread _thread;
 
-    void _RunThread(){
+    void RunThread(){
         while(_running){
-            _Run();
+            Run();
         }
     }
 };

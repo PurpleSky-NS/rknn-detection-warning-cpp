@@ -21,6 +21,9 @@ public:
     /** 根据标签文件类别名称（每行一个）*/
     bool SetClasses(const std::string &labelPath);
 
+    /** 获取类别信息*/
+    const std::vector<std::string> &GetClasses()const;
+
     /** 设置Anchor的值，支持3*3*2=18个数值 */
     bool SetAnchors(const std::vector<float> &anchors);
 
@@ -69,6 +72,11 @@ private:
 
     void NMS(ResultType &objects)const;
 };
+
+inline const std::vector<std::string> &Yolov7::GetClasses()const
+{
+    return _classes;
+}
 
 inline void Yolov7::RecalcScale(const cv::Size &size)
 {
