@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cpp-base64/base64.h>
 #include "runner.hpp"
 
 // 负责启动一个线程从帧队列里拉数据并用detector检测后放入resultQueue中

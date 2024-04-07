@@ -78,9 +78,10 @@ Tracker::Action Tracker::Update(std::chrono::steady_clock::time_point time)
     return NONE;
 }
 
-Tracker::Action Tracker::Update(std::chrono::steady_clock::time_point time, const Box &box)
+Tracker::Action Tracker::Update(std::chrono::steady_clock::time_point time, const Box &box, std::shared_ptr<cv::Mat> image)
 {
     _obj.box = box;
+    _lastTrackImage = image;
     ++_exTrackCount;
     return Update(time);
 }

@@ -25,6 +25,9 @@ public:
 
     // 获取ID
     const std::string &GetID()const;
+
+    // 获取该物体所在的图像
+    std::shared_ptr<const cv::Mat> GetImage()const;
     
     // 计算相似度
     double CalcSim(const Box &box);
@@ -34,7 +37,7 @@ public:
 
     // 更新追踪器的状态
     Action Update(std::chrono::steady_clock::time_point time);
-    Action Update(std::chrono::steady_clock::time_point time, const Box &box);
+    Action Update(std::chrono::steady_clock::time_point time, const Box &box, std::shared_ptr<cv::Mat> image);
 
 private:
     inline static std::chrono::duration _trackTimeThreshhold = std::chrono::milliseconds(1000);
@@ -46,6 +49,7 @@ private:
     bool _exists;
     std::chrono::steady_clock::time_point _createTime, _currentTime, _lastTrackTime;
     size_t _exTrackCount, _totalTrackCount;
+    std::shared_ptr<cv::Mat> _lastTrackImage;
 };
 
 using STracker = std::shared_ptr<Tracker>;
@@ -60,6 +64,11 @@ inline const Object &Tracker::GetObject()const
 inline const std::string &Tracker::GetID()const
 {
     return _id;
+}
+
+inline std::shared_ptr<const cv::Mat> Tracker::GetImage()const
+{
+    return _lastTrackImage;
 }
 
 inline Point Tracker::GetPos()const

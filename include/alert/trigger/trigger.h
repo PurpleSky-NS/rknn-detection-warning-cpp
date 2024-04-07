@@ -47,7 +47,7 @@ protected:
     std::string _event, _object, _region;
     
     // 调用这个接口报警
-    void Alert(const std::vector<STracker> &objs, std::shared_ptr<cv::Mat> image);
+    void Alert(const std::vector<STracker> &objs, std::shared_ptr<const cv::Mat> image);
 
 private:
     inline static std::unique_ptr<httplib::Client> _alertClient;  // 报警客户端

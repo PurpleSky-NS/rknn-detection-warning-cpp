@@ -8,6 +8,6 @@ public:
 
     void Leave(STracker tracker, const TrackerSet &trackers, std::shared_ptr<cv::Mat> image)
     {
-        Alert({tracker}, image);
+        Alert({tracker}, tracker->GetImage());
     }
 };

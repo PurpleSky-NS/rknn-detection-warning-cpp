@@ -1,6 +1,8 @@
 #include "alert/trigger/trigger.h"
 
 #include <json/json.h>
+#include <cpp-base64/base64.h>
+#include "draw/draw.hpp"
 #include "alert/trigger/enter.hpp"
 #include "alert/trigger/leave.hpp"
  
@@ -11,7 +13,7 @@ Trigger::Trigger(const std::string &event, const std::string &object, const std:
 }
     
 // 调用这个接口报警
-void Trigger::Alert(const std::vector<STracker> &objs, std::shared_ptr<cv::Mat> image)
+void Trigger::Alert(const std::vector<STracker> &objs, std::shared_ptr<const cv::Mat> image)
 {
     if(!_alertClient){
         spdlog::warn("没有设置报警Url，无法发送报警，事件为[{}]，区域为[{}]", _event, _region);
@@ -36,7 +38,22 @@ void Trigger::Alert(const std::vector<STracker> &objs, std::shared_ptr<cv::Mat> 
         }
     }
     alert["information"] = information;
-    alert["image"] = Json::Value(Json::nullValue);
+    // 绘制报警对象
+    cv::Mat dstImage = *image;
+    if(!objs.empty()){
+        auto cpImage = dstImage.clone();
+        for(auto &obj : objs)
+            DrawObject(cpImage, obj->GetObject());
+        dstImage = cpImage;
+    }
+    // 对图片编码
+    std::vector<uchar> buf;
+    cv::imencode(".jpg", dstImage, buf);
+    Json::Value imageValue;
+    imageValue["ext"] = "jpg";
+    imageValue["base64"] = base64_encode(buf.data(), buf.size());
+    alert["image"] = imageValue;
+
     Json::FastWriter writer;
     _alertClient->Post(_alertPath, writer.write(alert), "application/json");
 }

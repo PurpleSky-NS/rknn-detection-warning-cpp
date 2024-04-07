@@ -31,3 +31,8 @@ target_link_libraries(main PRIVATE JsonCpp::JsonCpp)
 
 find_package(httplib CONFIG REQUIRED)
 target_link_libraries(main PRIVATE httplib::httplib)
+
+# vcpkg这里的导入有问题，这个不是header-only的库，需要对.cpp进行编译
+find_path(CPP_BASE64_SOURCE_DIR "cpp-base64/base64.cpp")
+aux_source_directory(${CPP_BASE64_SOURCE_DIR}/cpp-base64 CPP_BASE64_SOURCE)
+target_sources(main PRIVATE ${CPP_BASE64_SOURCE})

@@ -27,6 +27,8 @@
 #include <ulid/ulid.hh>
 #include <json/json.h>
 #include <httplib.h>
+#include <cpp-base64/base64.h>
+#include "draw/draw.hpp"
 // extern "C" {
 // #include <libavcodec/avcodec.h>
 // #include <libavformat/avformat.h>
@@ -58,70 +60,14 @@
 // }
 
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
-int main3(int argc, char const *argv[])
-{
-    std::string p("http://localhost:5000/api/ccc");
-    auto fd = p.find("://");
-    if(fd == std::string::npos)
-        throw std::invalid_argument("url格式错误");
-    fd = p.find('/', fd + 3);
-    if(fd == std::string::npos)
-        throw std::invalid_argument("url格式错误");
-    std::cout << p.substr(0, fd) << std::endl;
-    httplib::Client cli(p.substr(0, fd));
-    cli.Post("/asssss");
-    return 0;
-}
-
 int main1(int argc, char const *argv[])
 {
-    spdlog::set_level(spdlog::level::debug);
-    spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [thread %t] %v");
-
-    LightAlerter alert({
-        "{\"name\": \"什么玩意1\", \"region\": [0.1, 0.1, 0.2, 0.2, 0.15, 0.1]}", 
-        "{\"name\": \"什么玩意2\", \"region\": [0.1, 0.1, 0.2, 0.2, 0.15, 0.1, 0.0, 0.05]}"
-    }, 500, 600, {
-        "{\"event\": \"什么玩意要报警1\", \"condition\": \"出现\", \"region\": \"什么玩意1\", \"object\": \"人1\", \"args\": null}",
-        "{\"event\": \"什么玩意要报警2\", \"condition\": \"出现\", \"region\": \"什么玩意1\", \"object\": \"人2\", \"args\": null}"
-    }, {"人1", "人2", "人3"});
-    // Json::Reader reader;
-	// Json::Value root;
-    // if(!reader.parse(std::string("null"), root)){
-    //     throw std::invalid_argument("事件触发器构造失败");
-    // }
-    // std::cout << root.isNull() << std::endl;
-    return 0;
-}
-
-int main2(int argc, char const *argv[])
-{
-    spdlog::set_level(spdlog::level::debug);
-    spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [thread %t] %v");
-
-    std::default_random_engine e;
-    std::uniform_int_distribution<int> pos(-20, 20);
-    std::uniform_int_distribution<int> size(0, 5);
-    std::bernoulli_distribution b(.5);
-    auto du = std::chrono::milliseconds(20);
-
-    Tracking tr({1});
-    tr.SetEnterCallback([](auto tracker, auto world, auto image){spdlog::debug("[({}){}] 进入了画面", tracker->GetObject().className, tracker->GetID());});
-    tr.SetLeaveCallback([](auto tracker, auto world, auto image){spdlog::debug("[({}){}] 离开了画面", tracker->GetObject().className, tracker->GetID());});
-    tr.SetUpdateCallback([](auto world, auto image){spdlog::debug("画面中有[{}]个物体", world.size());});
-    // Tracker ot({0, 0, 25, 25, 0.8, 1, "person"});
-    for(Object obj={0, 0, 25, 25, 0.5, 1, "人"};;obj.box.x+=pos(e), obj.box.y+=pos(e), obj.box.w += size(e), obj.box.h += size(e)){
-        if(b(e))
-            tr.Update({obj}, nullptr);
-        else
-            tr.Update({}, nullptr);
-        std::this_thread::sleep_for(du);
-    }
-    
-    // std::unordered_map<size_t, std::unordered_map<std::string, int>> a{{0, {{"00", 1}, {"00", 2}}}, {1, {{"11", 3}, {"11", 4}}}};
+    OpencvPuller puller("rtsp://admin:a123456789@192.168.1.65:554/Streaming/Channels/101?transportmode=unicast&profile=Profile_1");
+    auto frame = puller.GetFrame();
+    std::vector<uchar> buf;
+    cv::imencode(".jpg", *frame, buf);
+    auto b64img = base64_encode(buf.data(), buf.size());
+    std::cout << b64img << std::endl;
     return 0;
 }
 

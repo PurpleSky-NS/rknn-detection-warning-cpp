@@ -1,6 +1,6 @@
 #pragma once
 
-#include <opencv2/opencv.hpp>
+#include "draw/draw.hpp"
 #include "type.h"
 
 class OpencvDrawer

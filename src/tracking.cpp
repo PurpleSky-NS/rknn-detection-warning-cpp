@@ -39,7 +39,7 @@ void Tracking::Update(const ResultType &results, std::shared_ptr<cv::Mat> image)
         if(maxSimObj){
             // 可以找到之前追踪的物体
             fd->second.erase(maxSimObj->GetID());
-            if(auto oa = UpdateTracker(maxSimObj, maxSimObj->Update(time, obj.box)); oa)
+            if(auto oa = UpdateTracker(maxSimObj, maxSimObj->Update(time, obj.box, image)); oa)
                 objAndAction.push_back(*oa);
         }
         else{
