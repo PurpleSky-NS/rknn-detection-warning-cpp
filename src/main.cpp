@@ -26,6 +26,7 @@
 #include "alert/alert.h"
 #include <ulid/ulid.hh>
 #include <json/json.h>
+#include <httplib.h>
 // extern "C" {
 // #include <libavcodec/avcodec.h>
 // #include <libavformat/avformat.h>
@@ -56,6 +57,24 @@
 //     return std::make_tuple(values...);
 // }
 
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+int main3(int argc, char const *argv[])
+{
+    std::string p("http://localhost:5000/api/ccc");
+    auto fd = p.find("://");
+    if(fd == std::string::npos)
+        throw std::invalid_argument("url格式错误");
+    fd = p.find('/', fd + 3);
+    if(fd == std::string::npos)
+        throw std::invalid_argument("url格式错误");
+    std::cout << p.substr(0, fd) << std::endl;
+    httplib::Client cli(p.substr(0, fd));
+    cli.Post("/asssss");
+    return 0;
+}
 
 int main1(int argc, char const *argv[])
 {
@@ -110,7 +129,7 @@ int main(int argc, char const *argv[])
 {
     spdlog::set_level(spdlog::level::debug);
     spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [thread %t] %v");
-    
+
     argparse::ArgumentParser program("Edge Warning");
 
     program.add_argument("--model").default_value("model.rknn").help("RKNN模型");
@@ -118,13 +137,17 @@ int main(int argc, char const *argv[])
     program.add_argument("--classes_file").default_value("classes.txt").help("Classes文件位置");
     program.add_argument("--obj_thresh").default_value(0.65f).scan<'f', float>().help("类别阈值");
 
-    // program.add_argument("--input").required().help("输入视频流");
-    // program.add_argument("--output").required().help("输出视频流");
-    program.add_argument("--input").default_value("rtsp://admin:a123456789@192.168.1.65:554/Streaming/Channels/101?transportmode=unicast&profile=Profile_1").help("输入视频流");
-    program.add_argument("--output").default_value("rtmp://192.168.1.173/live/1699323368155858390").help("输出视频流");
+    program.add_argument("--input").required().help("输入视频流");
+    program.add_argument("--output").required().help("输出视频流");
+    program.add_argument("--alert_collect_url").required().help("报警收集地址");
 
-    program.add_argument("--ai_region").nargs('+').help("检测区域信息");
-    program.add_argument("--alert").nargs('+').help("报警设置信息");
+    // 调试使用
+    program.at("--input").default_value("rtsp://admin:a123456789@192.168.1.65:554/Streaming/Channels/101?transportmode=unicast&profile=Profile_1");
+    program.at("--output").default_value("rtmp://192.168.1.173/live/1699323368155858390");
+    program.at("--alert_collect_url").default_value("http://localhost:5000/alert/collect/1699323368155858390");
+
+    program.add_argument("--ai_region").nargs(argparse::nargs_pattern::any).help("检测区域信息");
+    program.add_argument("--alert").nargs(argparse::nargs_pattern::any).help("报警设置信息");
 
     try {
         program.parse_args(argc, argv);
@@ -154,6 +177,15 @@ int main(int argc, char const *argv[])
         program.get<std::vector<std::string>>("ai_region"), puller.GetWidth(), puller.GetHeight(), 
         program.get<std::vector<std::string>>("alert"), detector.GetClasses()
     );
+    // LightAlerter alerter(
+    //     {"{\"name\": \"4033600000000050114\", \"region\": [0.01791530944625407, 0.46606948968512485, 0.8778501628664497, 0.46606948968512485, 0.8778501628664497, 0.9533116178067318, 0.01791530944625407, 0.9533116178067318]}"}, puller.GetWidth(), puller.GetHeight(), 
+    //     {
+    //         "{\"event\": \"人来了\", \"object\": \"person\", \"condition\": \"出现\", \"region\": null, \"args\": null}", 
+    //         "{\"event\": \"人走了\", \"object\": \"person\", \"condition\": \"离开\", \"region\": null, \"args\": null}"
+    //     }, detector.GetClasses()
+    // );
+    // 设置报警Url
+    Trigger::SetAlertUrl(program.get("alert_collect_url"));
 
     Puller<decltype(puller), decltype(inputSQ)> tpuller(puller, inputSQ);
     Pusher<decltype(pusher), decltype(outputSQ)> tpusher(pusher, outputSQ);
@@ -161,11 +193,11 @@ int main(int argc, char const *argv[])
     Drawer<decltype(drawer), decltype(resultFrameSQ), decltype(inputSQ), decltype(outputSQ)> tdrawer(drawer, resultFrameSQ, inputSQ, outputSQ);
     Alerter<decltype(alerter), decltype(resultFrameSQ)> talerter(alerter, resultFrameSQ);
 
-    tpuller.Wait();
-    tpusher.Wait();
-    tdetector.Wait();
-    tdrawer.Wait();
-    talerter.Wait();
+    std::vector<Runner*> runners{&tpuller, &tpusher, &tdetector, &tdrawer, &talerter};
+    // 启动所有任务
+    std::for_each(runners.begin(), runners.end(), [](auto runner){runner->Start();});
+    // 等待所有任务结束
+    std::for_each(runners.begin(), runners.end(), [](auto runner){runner->Wait();});
 
     return 0; 
 }

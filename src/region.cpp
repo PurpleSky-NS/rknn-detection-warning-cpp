@@ -68,7 +68,7 @@ void Region::Enter(STracker tracker, std::shared_ptr<cv::Mat> image, TrackerSet 
     if(fd != trackerSet.end())
         return;
     // 有新物体进入该区域
-    spdlog::debug("({})物体[{}}]进入区域[{}]", tracker->GetID(), tracker->GetObject().className, _name);
+    spdlog::debug("({})物体[{}]进入区域[{}]", tracker->GetID(), tracker->GetObject().className, _name);
     trackerSet[tracker->GetID()] = tracker;
     for(auto &trigger: _triggers[tracker->GetObject().classIndex])
         trigger->Enter(tracker, _objects[tracker->GetObject().classIndex], image);
@@ -80,7 +80,7 @@ void Region::Leave(STracker tracker, std::shared_ptr<cv::Mat> image, TrackerSet 
     if(fd == trackerSet.end())
         return;
     // 有物体离开该区域
-    spdlog::debug("({})物体[{}}]离开区域[{}]", tracker->GetID(), tracker->GetObject().className, _name);
+    spdlog::debug("({})物体[{}]离开区域[{}]", tracker->GetID(), tracker->GetObject().className, _name);
     trackerSet.erase(tracker->GetID());
     trackerSet[tracker->GetID()] = tracker;
     for(auto &trigger: _triggers[tracker->GetObject().classIndex])

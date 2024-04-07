@@ -2,6 +2,7 @@
 
 #include <json/json.h>
 #include "alert/trigger/enter.hpp"
+#include "alert/trigger/leave.hpp"
  
 Trigger::Trigger(const std::string &event, const std::string &object, const std::string &region):
     _event(event), _object(object), _region(region)
@@ -12,8 +13,50 @@ Trigger::Trigger(const std::string &event, const std::string &object, const std:
 // 调用这个接口报警
 void Trigger::Alert(const std::vector<STracker> &objs, std::shared_ptr<cv::Mat> image)
 {
-    for(auto &t: objs)
-        spdlog::debug("[({}){}] ({}) 区域[{}]发生事件[{}]", _object, t->GetID(), objs.size(), _region, _event);
+    if(!_alertClient){
+        spdlog::warn("没有设置报警Url，无法发送报警，事件为[{}]，区域为[{}]", _event, _region);
+        return;
+    }
+    Json::Value alert;
+    alert["object"] = _object;
+    alert["event"] = _event;
+    alert["region"] = _region.empty() ? Json::Value(Json::nullValue) : _region;
+    Json::Value information;
+    if(objs.empty())
+        information = Json::Value(Json::nullValue);
+    else{
+        for(auto &obj : objs){
+            Json::Value boxValue(Json::arrayValue);
+            auto &box = obj->GetObject().box;
+            boxValue.append(box.x);
+            boxValue.append(box.y);
+            boxValue.append(box.x + box.w);
+            boxValue.append(box.y + box.h);
+            information[obj->GetID()] = boxValue;
+        }
+    }
+    alert["information"] = information;
+    alert["image"] = Json::Value(Json::nullValue);
+    Json::FastWriter writer;
+    _alertClient->Post(_alertPath, writer.write(alert), "application/json");
+}
+
+void Trigger::SetAlertUrl(const std::string &alertUrl)
+{
+    auto protocolEndPos = alertUrl.find("://");
+    if (protocolEndPos == std::string::npos) {
+        spdlog::critical("设置报警Url失败，缺少协议部分：{}", alertUrl);
+        throw std::invalid_argument("设置报警Url失败，缺少协议");
+    }
+
+    auto pathStartPos = alertUrl.find('/', protocolEndPos + 3);
+    if (pathStartPos == std::string::npos) {
+        spdlog::critical("设置报警Url失败，缺少路径部分：{}", alertUrl);
+        throw std::invalid_argument("设置报警Url失败，缺少路径");
+    }
+
+    _alertClient = std::make_unique<httplib::Client>(alertUrl.substr(0, pathStartPos));
+    _alertPath = alertUrl.substr(pathStartPos);
 }
 
 STrigger Trigger::ParseTrigger(const std::string &triggerInfo)
@@ -37,6 +80,9 @@ STrigger Trigger::ParseTrigger(const std::string &triggerInfo)
 
     if(condition == "出现")
         return STrigger(new EnterTrigger(event, object, region));
+    else if (condition == "离开")
+        return STrigger(new LeaveTrigger(event, object, region));
+    
     
     spdlog::critical("生成事件触发器失败，未知的触发条件[{}]（事件名称为[{}]，对象为[{}]）", condition, event, object);
     throw std::invalid_argument("构造事件触发器失败");

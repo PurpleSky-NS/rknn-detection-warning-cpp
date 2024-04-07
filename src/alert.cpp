@@ -39,6 +39,7 @@ LightAlerter::LightAlerter(
         regionMap[name] = _regions.size();
         _regions.emplace_back(name, regionPoints);
     }
+    regionMap[""] = _regions.size();
     _regions.push_back(Region());
     
     // 解析报警Json

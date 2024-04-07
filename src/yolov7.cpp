@@ -145,6 +145,15 @@ bool Yolov7::SetObjThresh(float conf)
     return false;
 }
 
+/**
+ * @brief 设置NMS阈值
+ *
+ * 设置YOLOv7的NMS（非极大值抑制）阈值。
+ *
+ * @param conf NMS阈值
+ *
+ * @return 设置成功返回true，否则返回false
+ */
 bool Yolov7::SetNMSThresh(float conf)
 {
     if(conf > 0 && conf < 1){
@@ -154,6 +163,15 @@ bool Yolov7::SetNMSThresh(float conf)
     return false;
 }
 
+/**
+ * @brief 在给定图像上进行目标检测
+ *
+ * 将输入图像进行预处理，并使用YOLOv7模型进行目标检测。
+ *
+ * @param image 输入图像
+ *
+ * @return 返回检测结果
+ */
 ResultType Yolov7::Detect(const cv::Mat &image)
 {
     RecalcScale(image.size());
@@ -173,11 +191,29 @@ ResultType Yolov7::Detect(const cv::Mat &image)
     return Postprocess4Outs<float16_t>();
 }
 
+/**
+ * @brief 检测图像中的目标
+ *
+ * 使用 YOLOv7 模型检测给定图像中的目标，并返回一个包含检测结果的智能指针。
+ *
+ * @param image 输入的图像
+ *
+ * @return 包含检测结果的智能指针
+ */
 std::shared_ptr<ResultType> Yolov7::Detect(std::shared_ptr<const cv::Mat> image)
 {
     return std::make_shared<ResultType>(Detect(*image));
 }
 
+/**
+ * @brief 对图像进行预处理
+ *
+ * 使用 YOLOv7 模型对给定的图像进行预处理，包括缩放、填充和颜色空间转换。
+ *
+ * @param image 输入的图像
+ *
+ * @return 预处理后的图像
+ */
 cv::Mat Yolov7::Preprocess(const cv::Mat &image)const
 {
     cv::Mat dst;
@@ -188,14 +224,24 @@ cv::Mat Yolov7::Preprocess(const cv::Mat &image)const
     return dst;
 }
 
+/**
+ * @brief 非极大值抑制
+ *
+ * 对检测结果进行非极大值抑制处理，去除重叠度较高的检测框。
+ *
+ * @param objects 检测结果
+ */
 void Yolov7::NMS(ResultType &objects)const
 {
     ResultType result;
+    // 按照得分从高到低排序
     std::sort(objects.begin(), objects.end(), [](auto &obj1, auto obj2){return obj1.score > obj2.score;});
     while (!objects.empty()) {
         auto &base = objects.front();
         for (auto cmpIter = ++objects.begin(); cmpIter != objects.end();) {
             auto &cmp = *cmpIter;
+
+            // 将点按 maxLength * boxes[0].classIndex 平移，以避免与不同类别的两个框发生碰撞
             // translate point by maxLength * boxes[0].classIndex to
             // avoid bumping into two boxes of different classes
             float baseX = base.box.x + _modelSize * base.classIndex;
@@ -203,6 +249,7 @@ void Yolov7::NMS(ResultType &objects)const
             float cmpX = cmp.box.x + _modelSize * cmp.classIndex;
             float cmpY = cmp.box.y + _modelSize * cmp.classIndex;
 
+            // 两个框的重叠部分
             // the overlapping part of the two boxes
             float xLeft = std::max(baseX, cmpX);
             float yTop = std::max(baseY, cmpY);
@@ -210,6 +257,8 @@ void Yolov7::NMS(ResultType &objects)const
             float yBottom = std::min(baseY + base.box.h, cmpY + cmp.box.h);
             float area = std::max(0.0f, xRight - xLeft) * std::max(0.0f, yBottom - yTop);
             float iou =  area / (base.box.w * base.box.h + cmp.box.w * cmp.box.h - area);
+
+            // 根据NMS阈值过滤框
             // filter boxes by NMS threshold
             if (iou > _nmsThresh) 
                 cmpIter = objects.erase(cmpIter);
