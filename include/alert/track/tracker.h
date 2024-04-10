@@ -23,17 +23,23 @@ public:
     // 获取关联的Object对象
     const Object &GetObject()const;
 
+    // 获取物体进入时的位置
+    const Box &GetEnterBox()const;
+
     // 获取ID
     const std::string &GetID()const;
 
     // 获取该物体所在的图像
     std::shared_ptr<const cv::Mat> GetImage()const;
+
+    // 获取物体创建时间
+    const std::chrono::steady_clock::time_point &GetCreateTime()const;
+
+    // 获取物体当前时间
+    const std::chrono::steady_clock::time_point &GetCurrentTime()const;
     
     // 计算相似度
-    double CalcSim(const Box &box);
-
-    // 获取中心点
-    Point GetPos()const;
+    double CalcSim(const Box &box)const;
 
     // 更新追踪器的状态
     Action Update(std::chrono::steady_clock::time_point time);
@@ -50,6 +56,7 @@ private:
     std::chrono::steady_clock::time_point _createTime, _currentTime, _lastTrackTime;
     size_t _exTrackCount, _totalTrackCount;
     std::shared_ptr<cv::Mat> _lastTrackImage;
+    Box _enterBox;  // 物体进入时的位置
 };
 
 using STracker = std::shared_ptr<Tracker>;
@@ -59,6 +66,11 @@ using TrackerWorld = std::unordered_map<size_t, TrackerSet>;  // Tracker可以�
 inline const Object &Tracker::GetObject()const
 {
     return _obj;
+}
+
+inline const Box &Tracker::GetEnterBox()const
+{
+    return _enterBox;
 }
 
 inline const std::string &Tracker::GetID()const
@@ -71,7 +83,12 @@ inline std::shared_ptr<const cv::Mat> Tracker::GetImage()const
     return _lastTrackImage;
 }
 
-inline Point Tracker::GetPos()const
+inline const std::chrono::steady_clock::time_point &Tracker::GetCreateTime()const
 {
-    return {_obj.box.x + static_cast<int>(_obj.box.w) / 2, _obj.box.y + static_cast<int>(_obj.box.h) / 2};
+    return _createTime;
+}
+
+inline const std::chrono::steady_clock::time_point &Tracker::GetCurrentTime()const
+{
+    return _currentTime;
 }

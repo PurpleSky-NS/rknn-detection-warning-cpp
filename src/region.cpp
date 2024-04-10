@@ -46,7 +46,7 @@ void Region::ObjectUpdate(STracker tracker, std::shared_ptr<cv::Mat> image)
         return;
 
     // 当该区域是全图区域或者该物体在该区域时
-    const auto &pos = tracker->GetPos();
+    const auto &pos = tracker->GetObject().box.GetPos();
     if(_region.empty() || cv::pointPolygonTest(_region, {static_cast<float>(pos.x), static_cast<float>(pos.y)}, false) == 1)
         Enter(tracker, image, fd->second);
     else

@@ -10,12 +10,13 @@ Tracker::Tracker(const Object &obj):
     _currentTime(_createTime),
     _lastTrackTime(_createTime),
     _exTrackCount(1), 
-    _totalTrackCount(1)
+    _totalTrackCount(1),
+    _enterBox(obj.box)
 {
     spdlog::debug("[({}){}] 开始追踪", _obj.className, _id);
 }
 
-double Tracker::CalcSim(const Box &box)
+double Tracker::CalcSim(const Box &box)const
 {
     double xmin1 = _obj.box.x, ymin1 = _obj.box.y, w1 = _obj.box.w, h1 = _obj.box.h;
     double xmin2 = box.x, ymin2 = box.y, w2 = box.w, h2 = box.h;

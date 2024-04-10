@@ -5,6 +5,9 @@
 #include "draw/draw.hpp"
 #include "alert/trigger/enter.hpp"
 #include "alert/trigger/leave.hpp"
+#include "alert/trigger/pass.hpp"
+#include "alert/trigger/stay.hpp"
+#include "alert/trigger/count.hpp"
  
 Trigger::Trigger(const std::string &event, const std::string &object, const std::string &region):
     _event(event), _object(object), _region(region)
@@ -40,7 +43,7 @@ void Trigger::Alert(const std::vector<STracker> &objs, std::shared_ptr<const cv:
     alert["information"] = information;
     // 绘制报警对象
     cv::Mat dstImage = *image;
-    if(!objs.empty()){
+    if(_drawBox && !objs.empty()){
         auto cpImage = dstImage.clone();
         for(auto &obj : objs)
             DrawObject(cpImage, obj->GetObject());
@@ -56,6 +59,11 @@ void Trigger::Alert(const std::vector<STracker> &objs, std::shared_ptr<const cv:
 
     Json::FastWriter writer;
     _alertClient->Post(_alertPath, writer.write(alert), "application/json");
+}
+
+void Trigger::SetDrawBox(bool drawBox)
+{
+    _drawBox = drawBox;
 }
 
 void Trigger::SetAlertUrl(const std::string &alertUrl)
@@ -99,7 +107,10 @@ STrigger Trigger::ParseTrigger(const std::string &triggerInfo)
         return STrigger(new EnterTrigger(event, object, region));
     else if (condition == "离开")
         return STrigger(new LeaveTrigger(event, object, region));
-    
+    else if (condition == "经过")
+        return STrigger(new PassTrigger(event, object, region, condition));
+    else if (condition == "经过")
+        return STrigger(new PassTrigger(event, object, region, condition));
     
     spdlog::critical("生成事件触发器失败，未知的触发条件[{}]（事件名称为[{}]，对象为[{}]）", condition, event, object);
     throw std::invalid_argument("构造事件触发器失败");

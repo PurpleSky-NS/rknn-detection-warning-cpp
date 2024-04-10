@@ -2,7 +2,7 @@
 
 #include <cctype>
 
-OpencvPuller::OpencvPuller(const std::string &source): _frameID(0)
+OpencvPuller::OpencvPuller(const std::string &source, const std::string &resolution): _frameID(0)
 {
     if(InitFFmpegBackend(source))
         _getFrameFn = &OpencvPuller::FFmpegParseFrame;
@@ -10,12 +10,17 @@ OpencvPuller::OpencvPuller(const std::string &source): _frameID(0)
         _getFrameFn = &OpencvPuller::OpencvParseFrame;
     else
         throw std::runtime_error("拉取视频流失败");
+    auto resDivFd = resolution.find('*');
+    if(resDivFd != std::string::npos){
+        _w = static_cast<uint>(std::stoul(resolution.substr(0, resDivFd)));
+        _h = static_cast<uint>(std::stoul(resolution.substr(resDivFd + 1)));
+    }
     CheckStreamProp();
 }
 
 void OpencvPuller::CheckStreamProp()
 {
-    if(_w * _h * _fps == 0){
+    if(_w * _h * _originW * _originH * _fps == 0){
         std::cerr << "视频流属性获取失败" <<std::endl;
         throw std::runtime_error("拉流失败");
     }
@@ -28,7 +33,8 @@ void OpencvPuller::CheckStreamProp()
 OpencvPuller &OpencvPuller::operator>>(cv::Mat &frame)
 {
     (this->*_getFrameFn)(frame);
-    frame = frame.clone();  // copy一份出来，切断数据关联，防止他在搞事的时候，这个类里给数据改了
+    cv::resize(frame.clone(), frame, {static_cast<int>(_w), static_cast<int>(_h)}, 0, 0);
+    // frame = frame.clone();  // copy一份出来，切断数据关联，防止他在搞事的时候，这个类里给数据改了
     ++_frameID;
     return *this;
 }
@@ -51,8 +57,8 @@ bool OpencvPuller::InitFFmpegBackend(const std::string &source)
         return false;
     }
 
-    _w = _ffStreamer->GetWidth();
-    _h = _ffStreamer->GetHeight();
+    _w = _originW = _ffStreamer->GetWidth();
+    _h = _originH = _ffStreamer->GetHeight();
     _fps = _ffStreamer->GetFPS();
     return true;
 }
@@ -64,7 +70,7 @@ void OpencvPuller::FFmpegParseFrame(cv::Mat &frame)
         if(pkt){
             auto data = _ffDecoder->Decode(pkt);
             if(data){
-                frame = std::move(cv::Mat(_h, _w, CV_8UC3, data));
+                frame = std::move(cv::Mat(_originH, _originW, CV_8UC3, data));
                 break;
             }
         }
@@ -79,8 +85,8 @@ bool OpencvPuller::InitOpencvBackend(const std::string &source)
         _cap.reset(new cv::VideoCapture(source));
     if(!_cap->isOpened())
         return false;
-    _w = static_cast<uint>(_cap->get(cv::CAP_PROP_FRAME_WIDTH));
-    _h = static_cast<uint>(_cap->get(cv::CAP_PROP_FRAME_HEIGHT));
+    _w = _originW = static_cast<uint>(_cap->get(cv::CAP_PROP_FRAME_WIDTH));
+    _h = _originH = static_cast<uint>(_cap->get(cv::CAP_PROP_FRAME_HEIGHT));
     _fps = _cap->get(cv::CAP_PROP_FPS);
     return true;
 }

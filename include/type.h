@@ -17,6 +17,7 @@ struct Box{
     // 长宽
     uint w;
     uint h;
+    Point GetPos()const;
 };
 
 struct Object {
@@ -27,3 +28,8 @@ struct Object {
 };
 
 using ResultType = std::vector<Object>;
+
+inline Point Box::GetPos()const
+{
+    return {x + static_cast<int>(w) / 2, y + static_cast<int>(h) / 2};
+}

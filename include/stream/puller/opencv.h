@@ -7,7 +7,7 @@
 class OpencvPuller
 {
 public:
-    OpencvPuller(const std::string &source);
+    OpencvPuller(const std::string &source, const std::string &resolution=std::string());
     OpencvPuller(const OpencvPuller&)=delete;
     OpencvPuller(OpencvPuller&&)=default;
     
@@ -25,9 +25,10 @@ public:
 private:
     // 视频流相关变量
     std::unique_ptr<cv::VideoCapture> _cap;
-    std::unique_ptr<FFmpegStreamer> _ffStreamer;  // 自带的opencv库有毛病，不能捕获网络流，所以写了个ffmpeg拉流的东西
+    std::unique_ptr<FFmpegStreamer> _ffStreamer;  // 如果自带的opencv库有毛病，不能捕获网络流，那么就用这个ffmpeg拉流
     std::unique_ptr<FFmpegDecoder> _ffDecoder;
     uint _w, _h;
+    uint _originW, _originH;
     double _fps;
     size_t _frameID;
     // 解析视频帧函数实现
