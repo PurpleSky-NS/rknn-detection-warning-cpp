@@ -52,8 +52,9 @@ void Tracking::Update(const ResultType &results, std::shared_ptr<cv::Mat> image)
     // 没有被认领的物体空更新一次
     for(auto &[_, classes]: trackers)
         for(auto &[_, tracker]: classes)
-            UpdateTracker(tracker, tracker->Update(time));
-    
+            if(auto oa = UpdateTracker(tracker, tracker->Update(time)); oa)
+                objAndAction.push_back(*oa);
+
     // 到这里，所有的集合都更新完毕，下面进行回调
     for(const auto &[tracker, action]: objAndAction){
         switch (action)
@@ -63,8 +64,6 @@ void Tracking::Update(const ResultType &results, std::shared_ptr<cv::Mat> image)
             break;
         case Tracker::LEAVE:
             _onLeaveCallback(tracker, _existObjs, image);
-            break;
-        default:
             break;
         }
     }
