@@ -107,9 +107,7 @@ STrigger Trigger::ParseTrigger(const std::string &triggerInfo)
         return STrigger(new EnterTrigger(event, object, region));
     else if (condition == "离开")
         return STrigger(new LeaveTrigger(event, object, region));
-    else if (condition == "经过")
-        return STrigger(new PassTrigger(event, object, region, condition));
-    else if (condition == "经过")
+    else if (condition.find("经过") != std::string::npos)
         return STrigger(new PassTrigger(event, object, region, condition));
     
     spdlog::critical("生成事件触发器失败，未知的触发条件[{}]（事件名称为[{}]，对象为[{}]）", condition, event, object);

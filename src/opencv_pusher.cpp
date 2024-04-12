@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-OpencvPusher::OpencvPusher(const std::string &output, uint w, uint h, double fps): _w(w), _h(h), _fps(fps), _dataSize(3*w*h)
+OpencvPusher::OpencvPusher(const std::string &output, uint w, uint h, double fps): _dataSize(3*w*h)
 {
     std::stringstream cmd;
     cmd << "ffmpeg -fflags nobuffer"

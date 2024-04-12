@@ -20,6 +20,15 @@ public:
     Tracker(const Tracker &) = default;
     Tracker(Tracker &&) = delete;
 
+    // 设置追踪时间阈值
+    static bool SetTrackTimeThreshhold(std::chrono::milliseconds time);
+
+    // 设置追踪进入阈值
+    static bool SetTrackEnterPercentThreshhold(double percent);
+
+    // 设置追踪离开阈值
+    static bool SetTrackLeavePercentThreshhold(double percent);
+
     // 获取关联的Object对象
     const Object &GetObject()const;
 
@@ -45,9 +54,12 @@ public:
     Action Update(std::chrono::steady_clock::time_point time);
     Action Update(std::chrono::steady_clock::time_point time, const Box &box, std::shared_ptr<cv::Mat> image);
 
-private:
+private:   
+    // 追踪时间阈值，每过一次这个时间会确认一次物体是否停留在画面中
     inline static std::chrono::duration _trackTimeThreshhold = std::chrono::milliseconds(1000);
+    // 认为物体在画面中的检测比
     inline static double _trackEnterPercentThreshhold = 0.6;
+    // 认为物体不在画面中的检测比（设为0表示只要物体在一次时间阈值中任意出现在画面中一次即可）
     inline static double _trackLeavePercentThreshhold = 0.0;
 
     Object _obj;

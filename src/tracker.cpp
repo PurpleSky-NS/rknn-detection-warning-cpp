@@ -2,6 +2,30 @@
 
 #include <spdlog/spdlog.h>
 
+bool Tracker::SetTrackTimeThreshhold(std::chrono::milliseconds ms)
+{
+    if(!ms.count())
+        return false;
+    _trackTimeThreshhold = ms;
+    return true;
+}
+
+bool Tracker::SetTrackEnterPercentThreshhold(double percent)
+{
+    if(percent < 0.0 || percent > 1.0)
+        return false;
+    _trackEnterPercentThreshhold = percent;
+    return true;
+}
+
+bool Tracker::SetTrackLeavePercentThreshhold(double percent)
+{
+    if(percent < 0.0 || percent > 1.0)
+        return false;
+    _trackLeavePercentThreshhold = percent;
+    return true;
+}
+
 Tracker::Tracker(const Object &obj): 
     _obj(obj),
     _id(ulid::Marshal(ulid::CreateNowRand())),

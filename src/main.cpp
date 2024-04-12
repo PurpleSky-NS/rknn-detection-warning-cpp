@@ -11,7 +11,9 @@
 #include "stream/puller/opencv.h"
 #include "stream/pusher/opencv.h"
 #include "stream/puller/puller.hpp"
+#include "stream/puller/dummy.hpp"
 #include "stream/pusher/pusher.hpp"
+#include "stream/pusher/cvshow.hpp"
 #include "detect/yolov7.h"
 #include "detect/detector.hpp"
 #include "draw/opencv.h"
@@ -44,55 +46,29 @@
 //     return o;
 // }
 
-// void saveFrame(AVFrame *pFrame, int width, int height, int iFrame)
-// {
-//     std::cout << "width: " << width<< " " << "height: " << height <<std::endl;
-//     std::cout << "lineSize0: " << pFrame->linesize[0]<< " " << "lineSize1:" << pFrame->linesize[1] <<std::endl;
-//     cv::Mat image(height, width, CV_8UC3, pFrame->data[0]);
-//     cv::imwrite("what.png", image);
-// }
-
-
-// template<typename... Tps>
-// std::tuple<Tps...> mt(Tps &&... values)
-// {
-//     return std::make_tuple(values...);
-// }
-
-
-int main1(int argc, char const *argv[])
+template<typename PullerType, typename PusherType, typename DetectorType, typename DrawerType, typename AlerterType, typename FrameType=cv::Mat>
+void StartRunnerWithDrawer(PullerType &puller, PusherType &pusher, DetectorType &detector, DrawerType &drawer, AlerterType &alerter)
 {
-    OpencvPuller puller("rtsp://admin:a123456789@192.168.1.65:554/Streaming/Channels/101?transportmode=unicast&profile=Profile_1");
-    auto frame = puller.GetFrame();
-    std::vector<uchar> buf;
-    cv::imencode(".jpg", *frame, buf);
-    auto b64img = base64_encode(buf.data(), buf.size());
-    std::cout << b64img << std::endl;
-    return 0;
-}
-
-template<typename Puller, typename Pusher, typename Detector, typename Drawer, typename Alerter, typename FrameSQType=cv::Mat>
-void StartRunnerWithDrawer(Puller &puller, Pusher &pusher, Detector &detector, Drawer &drawer, Alerter &alerter)
-{
-    SQueue<FrameSQType> inputSQ, outputSQ;
-    SQueue<ResultType, FrameSQType resultFrameSQ;
+    SQueue<FrameType> inputSQ, outputSQ;
+    SQueue<ResultType, FrameType> resultFrameSQ;
     Puller<decltype(puller), decltype(inputSQ)> tpuller(puller, inputSQ);
     Pusher<decltype(pusher), decltype(outputSQ)> tpusher(pusher, outputSQ);
     Detector<decltype(detector), decltype(inputSQ), decltype(resultFrameSQ)> tdetector(detector, inputSQ, resultFrameSQ);
     Drawer<decltype(drawer), decltype(resultFrameSQ), decltype(inputSQ), decltype(outputSQ)> tdrawer(drawer, resultFrameSQ, inputSQ, outputSQ);
     Alerter<decltype(alerter), decltype(resultFrameSQ)> talerter(alerter, resultFrameSQ);
     std::vector<Runner*> runners{&tpuller, &tpusher, &tdetector, &tdrawer, &talerter};
+    // std::vector<Runner*> runners{&tpuller, &tdetector, &tdrawer, &talerter};
     // 启动所有任务
     std::for_each(runners.begin(), runners.end(), [](auto runner){runner->Start();});
     // 等待所有任务结束
     std::for_each(runners.begin(), runners.end(), [](auto runner){runner->Wait();});
 }
 
-template<typename Puller, typename Pusher, typename Detector, typename Alerter, typename FrameSQType=cv::Mat>
-void StartRunnerWithoutDrawer(Puller &puller, Pusher &pusher, Detector &detector, Alerter &alerter)
+template<typename PullerType, typename PusherType, typename DetectorType, typename AlerterType, typename FrameType=cv::Mat>
+void StartRunnerWithoutDrawer(PullerType &puller, PusherType &pusher, DetectorType &detector, AlerterType &alerter)
 {
-    SQueue<FrameSQType> frameSQ;
-    SQueue<ResultType, FrameSQType> resultFrameSQ;
+    SQueue<FrameType> frameSQ;
+    SQueue<ResultType, FrameType> resultFrameSQ;
     Puller<decltype(puller), decltype(frameSQ)> tpuller(puller, frameSQ);
     Pusher<decltype(pusher), decltype(frameSQ)> tpusher(pusher, frameSQ);
     Detector<decltype(detector), decltype(frameSQ), decltype(resultFrameSQ)> tdetector(detector, frameSQ, resultFrameSQ);
@@ -114,17 +90,24 @@ int main(int argc, char const *argv[])
     // 模型参数
     program.add_argument("--model").default_value("model.rknn").help("RKNN模型");
     program.add_argument("--anchors_file").default_value("anchors.txt").help("Anchors文件位置，如果你的模型包含Grid操作，则无需该文件");
-    program.add_argument("--classes_file").default_value("classes.txt").help("Classes文件位置");
-
+    program.add_argument("--classes_file").default_value("classes.txt").help("Classes文件位置，目前只支持英文名称");
+    program.add_argument("--obj_thresh").default_value(0.65f).scan<'f', float>().help("对象类别阈值，范围为0~1，置信度为该阈值以下的预测框在检测中会被过滤");
+    program.add_argument("--nms_thresh").default_value(0.45f).scan<'f', float>().help("NMS的IOU阈值，范围为0~1，该数值是为了过滤过近的预测框，其值越大，保留的预测框越多");
+    
     // 视频参数
     program.add_argument("--input").required().help("输入视频流");
     program.add_argument("--output").required().help("输出视频流");
+    program.add_argument("--disable_push_video").flag().help("禁用视频流推流");
     program.add_argument("--resolution").default_value("").help("转播的分辨率(宽*高)，如640*480");
     program.add_argument("--disable_draw_video_box").flag().help("关闭视频画面绘制识别框");
 
+    // 追踪参数
+    program.add_argument("--track_time_threshhold").default_value(1.0f).scan<'f', float>().help("设置追踪时间阈值（秒），每过一次这个时间会确认一次物体是否停留在画面中");
+    program.add_argument("--track_enter_percent_threshhold").default_value(0.6f).scan<'f', float>().help("认为物体在画面中的检测比");
+    program.add_argument("--track_leave_percent_threshhold").default_value(0.f).help("认为物体不在画面中的检测比（设为0表示只要物体在一次时间阈值中任意出现在画面中一次即可）");
+
     // 报警参数
     program.add_argument("--alert_collect_url").required().help("报警收集地址");
-    program.add_argument("--obj_thresh").default_value(0.65f).scan<'f', float>().help("对象类别阈值");
     program.add_argument("--disable_draw_alert_box").flag().help("关闭报警图像绘制识别框");
 
     program.add_argument("--ai_region").nargs(argparse::nargs_pattern::any).help("检测区域信息");
@@ -148,33 +131,91 @@ int main(int argc, char const *argv[])
     detector.SetAnchors(program.get("anchors_file"));
     detector.SetClasses(program.get("classes_file"));
     detector.SetObjThresh(program.get<float>("obj_thresh"));
+    detector.SetNMSThresh(program.get<float>("nms_thresh"));
 
     // 拉流 
     OpencvPuller puller(program.get("input"), program.get("resolution"));
+    // DummyPuller puller("1.png");
     // 推流
-    OpencvPusher pusher(program.get("output"), puller.GetWidth(), puller.GetHeight(), puller.GetFPS());
+    
+    std::unique_ptr<OpencvPusher> ppusher;
+    
+    if(!program.get<bool>("disable_push_video"))
+        ppusher = std::make_unique<OpencvPusher>(program.get("output"), puller.GetWidth(), puller.GetHeight(), puller.GetFPS());
+
+    // CvShowPusher pusher;
     // 报警
     LightAlerter alerter(
         program.get<std::vector<std::string>>("ai_region"), puller.GetWidth(), puller.GetHeight(), 
         program.get<std::vector<std::string>>("alert"), detector.GetClasses()
     );
-    // LightAlerter alerter(
-    //     {"{\"name\": \"4033600000000050114\", \"region\": [0.01791530944625407, 0.46606948968512485, 0.8778501628664497, 0.46606948968512485, 0.8778501628664497, 0.9533116178067318, 0.01791530944625407, 0.9533116178067318]}"}, puller.GetWidth(), puller.GetHeight(), 
-    //     {
-    //         "{\"event\": \"人来了\", \"object\": \"person\", \"condition\": \"出现\", \"region\": null, \"args\": null}", 
-    //         "{\"event\": \"人走了\", \"object\": \"person\", \"condition\": \"离开\", \"region\": null, \"args\": null}"
-    //     }, detector.GetClasses()
-    // );
+    // 设置目标追踪参数
+    Tracker::SetTrackTimeThreshhold(std::chrono::milliseconds(static_cast<uint>(program.get<float>("track_time_threshhold") * 1000)));
+    Tracker::SetTrackEnterPercentThreshhold(program.get<float>("track_enter_percent_threshhold"));
+    Tracker::SetTrackLeavePercentThreshhold(program.get<float>("track_leave_percent_threshhold"));
+    // 设置事件触发器参数
     Trigger::SetAlertUrl(program.get("alert_collect_url"));  // 设置报警Url
     Trigger::SetDrawBox(!program.get<bool>("disable_draw_alert_box"));  // 设置是否绘制报警框
 
-    // 如果关闭了视频画面绘制识别框，则不启动绘图任务
-    if(program.get<bool>("disable_draw_video_box"))
-        StartRunnerWithoutDrawer(puller, pusher, detector, alerter);
-    else{
-        OpencvDrawer drawer;
-        StartRunnerWithDrawer(puller, pusher, detector, alerter, drawer);
+    std::unique_ptr<OpencvDrawer> pdrawer;
+    if(!program.get<bool>("disable_draw_video_box"))
+        pdrawer = std::make_unique<std::remove_reference<decltype(*pdrawer)>::type>();
+
+    // 下面开启多线程进行不同的任务
+    // 声明数据队列
+    std::unique_ptr<SQueue<cv::Mat>> inputSQ, outputSQ;
+    std::unique_ptr<SQueue<ResultType, cv::Mat>> resultFrameSQ;
+    // 声明任务线程对象
+    std::unique_ptr<Puller<decltype(puller), decltype(inputSQ)::element_type>> tpuller;
+    std::unique_ptr<Pusher<decltype(ppusher)::element_type, decltype(outputSQ)::element_type>> tpusher;
+    std::unique_ptr<Drawer<
+        decltype(pdrawer)::element_type, 
+        decltype(resultFrameSQ)::element_type, 
+        decltype(inputSQ)::element_type, 
+        decltype(outputSQ)::element_type
+    >> tdrawer;
+    std::unique_ptr<Detector<
+        decltype(detector), 
+        decltype(inputSQ)::element_type, 
+        decltype(resultFrameSQ)::element_type
+    >> tdetector;
+    std::unique_ptr<Alerter<decltype(alerter), decltype(resultFrameSQ)::element_type>> talerter;
+
+    // 初始化数据队列
+    inputSQ = std::make_unique<decltype(inputSQ)::element_type>();
+    outputSQ = std::make_unique<decltype(outputSQ)::element_type>();
+    resultFrameSQ = std::make_unique<decltype(resultFrameSQ)::element_type>();
+
+    // 拉流线程
+    tpuller = std::make_unique<decltype(tpuller)::element_type>(puller, *inputSQ);
+    // 推流线程
+    if(ppusher){
+        // 若开启推流
+        if(pdrawer){
+            // 若开启绘图，则将绘图流程连接上
+            outputSQ = std::make_unique<decltype(outputSQ)::element_type>();
+            tdrawer = std::make_unique<decltype(tdrawer)::element_type>(*pdrawer, *resultFrameSQ, *inputSQ, *outputSQ);
+            tpusher = std::make_unique<decltype(tpusher)::element_type>(*ppusher, *outputSQ);
+        }
+        else
+            tpusher = std::make_unique<decltype(tpusher)::element_type>(*ppusher, *inputSQ);
     }
+    // 检测线程
+    tdetector = std::make_unique<decltype(tdetector)::element_type>(detector, *inputSQ, *resultFrameSQ);
+    // 报警线程
+    talerter = std::make_unique<decltype(talerter)::element_type>(alerter, *resultFrameSQ);
+
+    // 启动任务
+    std::vector<Runner*> runners{tpuller.get(), tdetector.get(), talerter.get()};
+    if(tpusher)
+        runners.push_back(tpusher.get());
+    if(tdrawer)
+        runners.push_back(tdrawer.get());
+
+    // 启动所有任务
+    std::for_each(runners.begin(), runners.end(), [](auto runner){runner->Start();});
+    // 等待所有任务结束
+    std::for_each(runners.begin(), runners.end(), [](auto runner){runner->Wait();});
 
     return 0; 
 }
