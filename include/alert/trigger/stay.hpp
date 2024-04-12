@@ -3,7 +3,8 @@
 
 class StayTrigger: public Trigger
 {
-    StayTrigger(const std::string &event, const std::string &object, const std::string &region, const std::string &condition, float threshhold): 
+public:
+    StayTrigger(const std::string &event, const std::string &object, const std::string &region, double threshhold): 
         Trigger(event, object, region), _threshhold(threshhold * 1000)  // s -> ms
     {
         if(threshhold <= 0){

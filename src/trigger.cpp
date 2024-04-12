@@ -105,26 +105,39 @@ STrigger Trigger::ParseTrigger(const std::string &triggerInfo)
 
     if(condition == "出现")
         return STrigger(new EnterTrigger(event, object, region));
-    else if (condition == "离开")
+    else if(condition == "离开")
         return STrigger(new LeaveTrigger(event, object, region));
-    else if (condition.find("经过") != std::string::npos)
+    else if(condition.find("经过") != std::string::npos)
         return STrigger(new PassTrigger(event, object, region, condition));
-    
+    else if(condition.find("滞留") != std::string::npos){
+        // 滞留触发器需要额外时间参数
+        if(!argsValue.isArray() || argsValue.empty()){
+            spdlog::critical("滞留事件触发器构造失败，未传入滞留时间");
+            throw std::invalid_argument("构造事件触发器失败");
+        }
+        auto value = argsValue[0];
+        if(!value.isNumeric()){
+            spdlog::critical("滞留事件触发器构造失败，传入的阈值时间不是数字：[{}]", value.asString());
+            throw std::invalid_argument("构造事件触发器失败");
+        }
+        return STrigger(new StayTrigger(event, object, region, value.asDouble()));
+    }
+    else if(condition.find("等于") != std::string::npos
+        || condition.find("小于") != std::string::npos
+        || condition.find("大于") != std::string::npos
+    ){
+        // 数量触发器需要额外数量参数
+        if(!argsValue.isArray() || argsValue.empty()){
+            spdlog::critical("数量事件触发器构造失败，未传入数量");
+            throw std::invalid_argument("构造事件触发器失败");
+        }
+        auto value = argsValue[0];
+        if(!value.isUInt()){
+            spdlog::critical("数量事件触发器构造失败，传入的数量不是非负数：[{}]", value.asString());
+            throw std::invalid_argument("构造事件触发器失败");
+        }
+        return STrigger(new CountTrigger(event, object, region, condition, value.asUInt()));
+    }
     spdlog::critical("生成事件触发器失败，未知的触发条件[{}]（事件名称为[{}]，对象为[{}]）", condition, event, object);
     throw std::invalid_argument("构造事件触发器失败");
-    // event, object, args, region = alert_config['event'], alert_config['object'], alert_config['args'] or [], alert_config.get('region')
-
-    // if condition == '出现':
-    //     return EnterTrigger(event, object, region)
-    // elif condition == '离开':
-    //     return LeaveTrigger(event, object, region)
-    // elif condition == '滞留':
-    //     return StayTrigger(event, object, region, *args)
-    // elif condition.endswith('经过'):
-    //     return PassTrigger(event, object, region, condition)
-    // elif '等于' in condition \
-    //     or '小于' in condition \
-    //     or '大于' in condition :
-    //     return CountTrigger(event, object, region, condition, *args)
-    // raise RuntimeError(f'未知报警条件：{condition}')
 }
