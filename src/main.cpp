@@ -8,12 +8,15 @@
 #include <spdlog/spdlog.h>
 #include <argparse/argparse.hpp>
 // #include <random>
+#include "stream/decoder/soft.h"
+#include "stream/decoder/decoder.hpp"
 #include "stream/puller/opencv.h"
-#include "stream/pusher/opencv.h"
+#include "stream/pusher/ffmpeg.h"
+#include "stream/pusher/packet.h"
+#include "stream/puller/packet.h"
 #include "stream/puller/puller.hpp"
 #include "stream/puller/dummy.hpp"
 #include "stream/pusher/pusher.hpp"
-#include "stream/pusher/cvshow.hpp"
 #include "detect/yolov7.h"
 #include "detect/detector.hpp"
 #include "draw/opencv.h"
@@ -46,38 +49,70 @@
 //     return o;
 // }
 
-template<typename PullerType, typename PusherType, typename DetectorType, typename DrawerType, typename AlerterType, typename FrameType=cv::Mat>
-void StartRunnerWithDrawer(PullerType &puller, PusherType &pusher, DetectorType &detector, DrawerType &drawer, AlerterType &alerter)
+/**
+ * @brief 启动所有任务
+ *
+ * 遍历给定的任务列表，依次启动每个任务，并等待它们完成。
+ *
+ * @param runners 任务列表
+ */
+void StartRunners(const std::vector<Runner*> runners)
 {
-    SQueue<FrameType> inputSQ, outputSQ;
-    SQueue<ResultType, FrameType> resultFrameSQ;
-    Puller<decltype(puller), decltype(inputSQ)> tpuller(puller, inputSQ);
-    Pusher<decltype(pusher), decltype(outputSQ)> tpusher(pusher, outputSQ);
-    Detector<decltype(detector), decltype(inputSQ), decltype(resultFrameSQ)> tdetector(detector, inputSQ, resultFrameSQ);
-    Drawer<decltype(drawer), decltype(resultFrameSQ), decltype(inputSQ), decltype(outputSQ)> tdrawer(drawer, resultFrameSQ, inputSQ, outputSQ);
-    Alerter<decltype(alerter), decltype(resultFrameSQ)> talerter(alerter, resultFrameSQ);
-    std::vector<Runner*> runners{&tpuller, &tpusher, &tdetector, &tdrawer, &talerter};
-    // std::vector<Runner*> runners{&tpuller, &tdetector, &tdrawer, &talerter};
     // 启动所有任务
     std::for_each(runners.begin(), runners.end(), [](auto runner){runner->Start();});
     // 等待所有任务结束
     std::for_each(runners.begin(), runners.end(), [](auto runner){runner->Wait();});
 }
 
-template<typename PullerType, typename PusherType, typename DetectorType, typename AlerterType, typename FrameType=cv::Mat>
-void StartRunnerWithoutDrawer(PullerType &puller, PusherType &pusher, DetectorType &detector, AlerterType &alerter)
+template<typename DetectorType>
+void StartWithDF(DetectorType &detector, const argparse::ArgumentParser &program)
 {
-    SQueue<FrameType> frameSQ;
-    SQueue<ResultType, FrameType> resultFrameSQ;
-    Puller<decltype(puller), decltype(frameSQ)> tpuller(puller, frameSQ);
-    Pusher<decltype(pusher), decltype(frameSQ)> tpusher(pusher, frameSQ);
-    Detector<decltype(detector), decltype(frameSQ), decltype(resultFrameSQ)> tdetector(detector, frameSQ, resultFrameSQ);
+    spdlog::info("程序进入绘图模式");
+    OpencvPuller puller(program.get("input"));
+    FFmpegPusher pusher(program.get("output"), puller.GetWidth(), puller.GetHeight(), puller.GetFPS());
+    LightAlerter alerter(
+        program.get<std::vector<std::string>>("ai_region"), puller.GetWidth(), puller.GetHeight(), 
+        program.get<std::vector<std::string>>("alert"), detector.GetClasses()
+    );
+    OpencvDrawer drawer;
+
+    SQueue<cv::Mat> inputSQ, outputSQ;
+    SQueue<ResultType, cv::Mat> resultFrameSQ;
+
+    // 声明任务线程对象
+    Puller<decltype(puller), decltype(inputSQ)> tpuller(puller, inputSQ);
+    Pusher<decltype(pusher), decltype(outputSQ)> tpusher(pusher, outputSQ);
+    Drawer<decltype(drawer), decltype(resultFrameSQ), decltype(inputSQ), decltype(outputSQ)> tdrawer(drawer, resultFrameSQ, inputSQ, outputSQ);
+    Detector<DetectorType, decltype(inputSQ), decltype(resultFrameSQ)> tdetector(detector, inputSQ, resultFrameSQ);
     Alerter<decltype(alerter), decltype(resultFrameSQ)> talerter(alerter, resultFrameSQ);
-    std::vector<Runner*> runners{&tpuller, &tpusher, &tdetector, &talerter};
-    // 启动所有任务
-    std::for_each(runners.begin(), runners.end(), [](auto runner){runner->Start();});
-    // 等待所有任务结束
-    std::for_each(runners.begin(), runners.end(), [](auto runner){runner->Wait();});
+
+    StartRunners({&tpuller, &tpusher, &tdetector, &tdrawer, &talerter});
+}
+
+template<typename DetectorType>
+void StartWithoutDF(DetectorType &detector, const argparse::ArgumentParser &program)
+{
+    spdlog::info("程序进入无绘图数据包转发模式");
+    PacketPuller puller(program.get("input"));
+    PacketPusher pusher(puller, program.get("output"));
+    SoftDecoder decoder(puller);
+    LightAlerter alerter(
+        program.get<std::vector<std::string>>("ai_region"), puller.GetWidth(), puller.GetHeight(), 
+        program.get<std::vector<std::string>>("alert"), detector.GetClasses()
+    );
+
+    SQueue<AVPacket> pktSQ;
+    SQueue<cv::Mat> frameSQ;
+    SQueue<ResultType, cv::Mat> resultFrameSQ;
+
+    // 声明任务线程对象
+    Puller<decltype(puller), decltype(pktSQ)> tpuller(puller, pktSQ);
+    Pusher<decltype(pusher), decltype(pktSQ)> tpusher(pusher, pktSQ);
+    Decoder<decltype(decoder), decltype(pktSQ), decltype(frameSQ)> tdecoder(decoder, pktSQ, frameSQ);
+    Detector<DetectorType, decltype(frameSQ), decltype(resultFrameSQ)> tdetector(detector, frameSQ, resultFrameSQ);
+    Alerter<decltype(alerter), decltype(resultFrameSQ)> talerter(alerter, resultFrameSQ);
+
+    StartRunners({&tpuller, &tpusher, &tdecoder, &tdetector, &talerter});
 }
 
 int main(int argc, char const *argv[])
@@ -97,8 +132,6 @@ int main(int argc, char const *argv[])
     // 视频参数
     program.add_argument("--input").required().help("输入视频流");
     program.add_argument("--output").required().help("输出视频流");
-    program.add_argument("--disable_push_video").flag().help("禁用视频流推流");
-    program.add_argument("--resolution").default_value("").help("转播的分辨率(宽*高)，如640*480");
     program.add_argument("--disable_draw_video_box").flag().help("关闭视频画面绘制识别框");
 
     // 追踪参数
@@ -133,22 +166,6 @@ int main(int argc, char const *argv[])
     detector.SetObjThresh(program.get<float>("obj_thresh"));
     detector.SetNMSThresh(program.get<float>("nms_thresh"));
 
-    // 拉流 
-    OpencvPuller puller(program.get("input"), program.get("resolution"));
-    // DummyPuller puller("1.png");
-    // 推流
-    
-    std::unique_ptr<OpencvPusher> ppusher;
-    
-    if(!program.get<bool>("disable_push_video"))
-        ppusher = std::make_unique<OpencvPusher>(program.get("output"), puller.GetWidth(), puller.GetHeight(), puller.GetFPS());
-
-    // CvShowPusher pusher;
-    // 报警
-    LightAlerter alerter(
-        program.get<std::vector<std::string>>("ai_region"), puller.GetWidth(), puller.GetHeight(), 
-        program.get<std::vector<std::string>>("alert"), detector.GetClasses()
-    );
     // 设置目标追踪参数
     Tracker::SetTrackTimeThreshhold(std::chrono::milliseconds(static_cast<uint>(program.get<float>("track_time_threshhold") * 1000)));
     Tracker::SetTrackEnterPercentThreshhold(program.get<float>("track_enter_percent_threshhold"));
@@ -157,65 +174,9 @@ int main(int argc, char const *argv[])
     Trigger::SetAlertUrl(program.get("alert_collect_url"));  // 设置报警Url
     Trigger::SetDrawBox(!program.get<bool>("disable_draw_alert_box"));  // 设置是否绘制报警框
 
-    std::unique_ptr<OpencvDrawer> pdrawer;
-    if(!program.get<bool>("disable_draw_video_box"))
-        pdrawer = std::make_unique<std::remove_reference<decltype(*pdrawer)>::type>();
-
-    // 下面开启多线程进行不同的任务
-    // 声明数据队列
-    std::unique_ptr<SQueue<cv::Mat>> inputSQ, outputSQ;
-    std::unique_ptr<SQueue<ResultType, cv::Mat>> resultFrameSQ;
-    // 声明任务线程对象
-    std::unique_ptr<Puller<decltype(puller), decltype(inputSQ)::element_type>> tpuller;
-    std::unique_ptr<Pusher<decltype(ppusher)::element_type, decltype(outputSQ)::element_type>> tpusher;
-    std::unique_ptr<Drawer<
-        decltype(pdrawer)::element_type, 
-        decltype(resultFrameSQ)::element_type, 
-        decltype(inputSQ)::element_type, 
-        decltype(outputSQ)::element_type
-    >> tdrawer;
-    std::unique_ptr<Detector<
-        decltype(detector), 
-        decltype(inputSQ)::element_type, 
-        decltype(resultFrameSQ)::element_type
-    >> tdetector;
-    std::unique_ptr<Alerter<decltype(alerter), decltype(resultFrameSQ)::element_type>> talerter;
-
-    // 初始化数据队列
-    inputSQ = std::make_unique<decltype(inputSQ)::element_type>();
-    outputSQ = std::make_unique<decltype(outputSQ)::element_type>();
-    resultFrameSQ = std::make_unique<decltype(resultFrameSQ)::element_type>();
-
-    // 拉流线程
-    tpuller = std::make_unique<decltype(tpuller)::element_type>(puller, *inputSQ);
-    // 推流线程
-    if(ppusher){
-        // 若开启推流
-        if(pdrawer){
-            // 若开启绘图，则将绘图流程连接上
-            outputSQ = std::make_unique<decltype(outputSQ)::element_type>();
-            tdrawer = std::make_unique<decltype(tdrawer)::element_type>(*pdrawer, *resultFrameSQ, *inputSQ, *outputSQ);
-            tpusher = std::make_unique<decltype(tpusher)::element_type>(*ppusher, *outputSQ);
-        }
-        else
-            tpusher = std::make_unique<decltype(tpusher)::element_type>(*ppusher, *inputSQ);
-    }
-    // 检测线程
-    tdetector = std::make_unique<decltype(tdetector)::element_type>(detector, *inputSQ, *resultFrameSQ);
-    // 报警线程
-    talerter = std::make_unique<decltype(talerter)::element_type>(alerter, *resultFrameSQ);
-
-    // 启动任务
-    std::vector<Runner*> runners{tpuller.get(), tdetector.get(), talerter.get()};
-    if(tpusher)
-        runners.push_back(tpusher.get());
-    if(tdrawer)
-        runners.push_back(tdrawer.get());
-
-    // 启动所有任务
-    std::for_each(runners.begin(), runners.end(), [](auto runner){runner->Start();});
-    // 等待所有任务结束
-    std::for_each(runners.begin(), runners.end(), [](auto runner){runner->Wait();});
-
+    if(program.get<bool>("disable_draw_video_box"))
+        StartWithoutDF(detector, program);
+    else
+        StartWithDF(detector, program);
     return 0; 
 }

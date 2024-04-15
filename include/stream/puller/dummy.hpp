@@ -13,7 +13,7 @@ public:
     
     //有下面两种方式获取帧
     DummyPuller &operator>>(cv::Mat &frame);
-    std::shared_ptr<cv::Mat> GetFrame();
+    std::shared_ptr<cv::Mat> Fetch();
 
     //每次获取完帧之后，这个数会涨
     inline size_t GetFrameID()const;
@@ -44,7 +44,7 @@ DummyPuller &DummyPuller::operator>>(cv::Mat &frame)
     return *this;
 }
 
-std::shared_ptr<cv::Mat> DummyPuller::GetFrame()
+std::shared_ptr<cv::Mat> DummyPuller::Fetch()
 {
     cv::Mat img;
     *this >> img;

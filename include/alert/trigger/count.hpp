@@ -22,41 +22,23 @@ public:
             _judgment = [threshhold](uint count) -> bool {return count <= threshhold;};
     }
 
-    void Enter(STracker tracker, const TrackerSet &trackers, std::shared_ptr<cv::Mat> image)
+    void Update(const TrackerSet &trackers, std::shared_ptr<cv::Mat> image)
     {
-        TestAlert(trackers, image);
-    }
-
-    void Leave(STracker tracker, const TrackerSet &trackers, std::shared_ptr<cv::Mat> image)
-    {
-        TestAlert(trackers, image);
-    }
-
-private:
-    bool _alerted = false;
-    std::function<bool(uint)> _judgment;
-
-    /**
-     * @brief 测试警告函数
-     *
-     * 根据给定的目标集合和图像，判断是否需要触发警告。
-     *
-     * @param objs 目标集合
-     * @param image 图像
-     */
-    void TestAlert(const TrackerSet& objs, std::shared_ptr<cv::Mat> image)
-    {
-        if(_judgment(objs.size())){
+        if(_judgment(trackers.size())){
             if(_alerted)
                 return;
             _alerted = true;
             std::vector<STracker> alertObjs;
-            alertObjs.reserve(objs.size());
-            for(auto &[_, obj]: objs)
+            alertObjs.reserve(trackers.size());
+            for(auto &[_, obj]: trackers)
                 alertObjs.push_back(obj);
             Alert(alertObjs, image);
         }
         else
             _alerted = false;
     }
+
+private:
+    bool _alerted = false;
+    std::function<bool(uint)> _judgment;
 };

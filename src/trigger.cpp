@@ -19,9 +19,10 @@ Trigger::Trigger(const std::string &event, const std::string &object, const std:
 void Trigger::Alert(const std::vector<STracker> &objs, std::shared_ptr<const cv::Mat> image)
 {
     if(!_alertClient){
-        spdlog::warn("没有设置报警Url，无法发送报警，事件为[{}]，区域为[{}]", _event, _region);
+        spdlog::warn("没有设置报警Url，无法发送报警，事件为[{}]，区域为[{}]", _event, _region.empty() ? "整个画面" : _region);
         return;
     }
+    spdlog::debug("事件[{}]触发，关联对象为[{}]，对应区域为：[{}]", _event, _object, _region.empty() ? "整个画面" : _region);
     Json::Value alert;
     alert["object"] = _object;
     alert["event"] = _event;

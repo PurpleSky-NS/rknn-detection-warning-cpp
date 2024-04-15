@@ -2,7 +2,7 @@
 
 #include "runner.hpp"
 
-// 负责启动一个线程将puller中的数据不断放入squeue中
+// 负责启动一个线程将Frame与result取出让drawer绘制，并将绘制结果存入outputQueue中
 template<typename DrawerType, typename ResultQueueType, typename InputQueueType, typename OutputQueueType>
 class Drawer: public Runner
 {

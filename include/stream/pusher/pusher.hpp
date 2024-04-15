@@ -12,7 +12,7 @@ public:
 
 protected:
     void Run(){
-        _pusher.PushFrame(std::get<0>(_queue.Get(_queueId)));
+        _pusher.Push(std::get<0>(_queue.Get(_queueId)));
     }
 private:
     PusherType &_pusher;

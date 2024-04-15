@@ -2,7 +2,7 @@
 
 #include "runner.hpp"
 
-// 负责启动一个线程将puller中的数据不断放入squeue中
+// 负责启动一个线程将puller中的数据不断放入queue中
 template<typename PullerType, typename QueueType>
 class Puller: public Runner
 {
@@ -11,7 +11,7 @@ public:
 
 protected:
     void Run(){
-        _queue.Put(_puller.GetFrame());
+        _queue.Put(_puller.Pull());
     }
 private:
     PullerType &_puller;
