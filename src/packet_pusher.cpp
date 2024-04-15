@@ -15,8 +15,8 @@ PacketPusher::PacketPusher(const PacketPuller &pktPuller, const std::string &out
 
     //申请输出AVStream(rtmp)
     const AVCodec* outCodec = avcodec_find_decoder(_inputFmtCtx->streams[pktPuller._videoStreamIndex]->codecpar->codec_id);
-    auto pRtmpAVStream = avformat_new_stream(_outputFmtCtx, outCodec);
-    if (!pRtmpAVStream)
+    auto pOutputAVStream = avformat_new_stream(_outputFmtCtx, outCodec);
+    if (!pOutputAVStream)
     {
         spdlog::critical("输出流构造失败");
         throw std::runtime_error("推流失败");
@@ -30,7 +30,7 @@ PacketPusher::PacketPusher(const PacketPuller &pktPuller, const std::string &out
         throw std::runtime_error("推流失败");
     }
 
-    if (avcodec_parameters_from_context(pRtmpAVStream->codecpar, outCodecCtx) < 0)
+    if (avcodec_parameters_from_context(pOutputAVStream->codecpar, outCodecCtx) < 0)
     {
         spdlog::critical("输出流信息复制失败");
         throw std::runtime_error("推流失败");
@@ -73,16 +73,15 @@ PacketPusher &PacketPusher::operator<<(AVPacket &oriPkt)
         return *this;
     _lastDts = oriPkt.dts;
 
-    auto rtspStream = _inputFmtCtx->streams[oriPkt.stream_index], rtmpStream = _outputFmtCtx->streams[oriPkt.stream_index];
+    auto inputStream = _inputFmtCtx->streams[oriPkt.stream_index], outputStream = _outputFmtCtx->streams[0];
     
     AVPacket pkt;  // 这里得复制一下，因为下面那个写入的函数会改变pkt，导致那边的解码失败
     av_packet_ref(&pkt, &oriPkt);
-    pkt.pts = av_rescale_q_rnd(pkt.pts, rtspStream->time_base, rtmpStream->time_base, AVRounding(AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX));
-    pkt.dts = av_rescale_q_rnd(pkt.dts, rtspStream->time_base, rtmpStream->time_base, AVRounding(AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX));
-    pkt.duration = av_rescale_q(pkt.duration, rtspStream->time_base, rtmpStream->time_base);
-    pkt.pos = -1;
+    pkt.pts = av_rescale_q_rnd(pkt.pts, inputStream->time_base, outputStream->time_base, AVRounding(AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX));
+    pkt.dts = av_rescale_q_rnd(pkt.dts, inputStream->time_base, outputStream->time_base, AVRounding(AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX));
+    pkt.duration = av_rescale_q(pkt.duration, inputStream->time_base, outputStream->time_base);
+    pkt.stream_index = 0;
     if (av_interleaved_write_frame(_outputFmtCtx, &pkt) < 0)
         spdlog::error("写入数据包时出错");
-
     return *this;
 }
