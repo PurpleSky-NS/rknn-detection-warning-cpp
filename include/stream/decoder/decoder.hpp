@@ -1,5 +1,5 @@
 #pragma once
-
+#include <type_traits>
 #include "runner.hpp"
 
 // 负责启动一个线程将pktQueue的数据解码后放入frameQueue中
@@ -7,7 +7,7 @@ template<typename DecoderType, typename PacketQueueType, typename FrameQueueType
 class Decoder: public Runner
 {
 public:
-    Decoder(DecoderType &decoder, const PacketQueueType &packetQueue, FrameQueueType &frameQueue): 
+    Decoder(DecoderType &decoder, PacketQueueType &packetQueue, FrameQueueType &frameQueue): 
         _decoder(decoder), 
         _packetQueue(packetQueue), 
         _frameQueue(frameQueue) {}
@@ -21,6 +21,6 @@ protected:
 private:
     DecoderType &_decoder;
     typename PacketQueueType::DataID _packetQueueId;
-    const PacketQueueType &_packetQueue;
+    PacketQueueType &_packetQueue;
     FrameQueueType &_frameQueue;
 };

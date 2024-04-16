@@ -9,7 +9,7 @@ template<typename DetectorType, typename FrameQueueType, typename ResultQueueTyp
 class Detector: public Runner
 {
 public:
-    Detector(DetectorType &detector, const FrameQueueType &frameQueue, ResultQueueType &resultFrameQueue): 
+    Detector(DetectorType &detector, FrameQueueType &frameQueue, ResultQueueType &resultFrameQueue): 
         _detector(detector), _frameQueue(frameQueue), _resultFrameQueue(resultFrameQueue) {}
 
 protected:
@@ -21,7 +21,7 @@ protected:
 private:
     DetectorType &_detector;
     typename FrameQueueType::DataID _frameQueueId;
-    const FrameQueueType &_frameQueue;
+    FrameQueueType &_frameQueue;
     ResultQueueType &_resultFrameQueue;
 };
 
@@ -30,7 +30,7 @@ template<typename DetectorType, typename FrameQueueType, typename ResultQueueTyp
 class DummyDetector: public Runner
 {
 public:
-    DummyDetector(DetectorType &detector, const FrameQueueType &frameQueue, ResultQueueType &resultFrameQueue): 
+    DummyDetector(DetectorType &detector, FrameQueueType &frameQueue, ResultQueueType &resultFrameQueue): 
         _detector(detector), _frameQueue(frameQueue), _resultFrameQueue(resultFrameQueue), _rdPos(-20, 20), _rdSize(-10, 20), _rdB(.6) {}
 
 protected:
@@ -49,7 +49,7 @@ protected:
 private:
     DetectorType &_detector;
     typename FrameQueueType::DataID _frameQueueId;
-    const FrameQueueType &_frameQueue;
+    FrameQueueType &_frameQueue;
     ResultQueueType &_resultFrameQueue;
 
     size_t _dummyFrameCount = 0;

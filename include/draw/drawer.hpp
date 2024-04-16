@@ -7,7 +7,7 @@ template<typename DrawerType, typename ResultQueueType, typename InputQueueType,
 class Drawer: public Runner
 {
 public:
-    Drawer(DrawerType &drawer, const ResultQueueType &resultQueue, const InputQueueType &inputQueue, OutputQueueType &outputQueue): 
+    Drawer(DrawerType &drawer, ResultQueueType &resultQueue, InputQueueType &inputQueue, OutputQueueType &outputQueue): 
         _drawer(drawer), 
         _resultQueue(resultQueue), 
         _inputQueue(inputQueue), 
@@ -23,9 +23,9 @@ protected:
 private:
     DrawerType &_drawer;
     typename ResultQueueType::DataID _resultQueueId;
-    const ResultQueueType &_resultQueue;
+    ResultQueueType &_resultQueue;
     typename ResultQueueType::ValueType _results;  // 缓存识别的结果，实现“跳帧”检测
     typename InputQueueType::DataID _inputQueueId;
-    const InputQueueType &_inputQueue;
+    InputQueueType &_inputQueue;
     OutputQueueType &_outputQueue;
 };

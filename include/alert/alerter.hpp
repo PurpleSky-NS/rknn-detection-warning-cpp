@@ -8,7 +8,7 @@ template<typename AlerterType, typename ResultFrameQueueType>
 class Alerter: public Runner
 {
 public:
-    Alerter(AlerterType &alerter, const ResultFrameQueueType &resultFrameQueue): 
+    Alerter(AlerterType &alerter, ResultFrameQueueType &resultFrameQueue): 
         _alerter(alerter), _resultFrameQueue(resultFrameQueue) {}
 
 protected:
@@ -19,5 +19,5 @@ protected:
 private:
     AlerterType &_alerter;
     typename ResultFrameQueueType::DataID _resultFrameQueueId;
-    const ResultFrameQueueType &_resultFrameQueue;
+    ResultFrameQueueType &_resultFrameQueue;
 };

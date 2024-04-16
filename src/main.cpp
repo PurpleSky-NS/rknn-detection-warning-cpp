@@ -25,7 +25,7 @@
 #include "alert/alerter.hpp"
 // #include "drawer/cxvFont.hpp"
 #include "timer.h"
-#include "squeue.hpp"
+#include "queues.hpp"
 #include "alert/track/tracker.h"
 #include "alert/track/tracking.h"
 #include "alert/alert.h"
@@ -101,14 +101,15 @@ void StartWithoutDF(DetectorType &detector, const argparse::ArgumentParser &prog
         program.get<std::vector<std::string>>("alert"), detector.GetClasses()
     );
 
-    SQueue<AVPacket> pktSQ;
+    TQueue<16, AVPacket> outputPktSQ, decodePktSQ;
+    Dispatcher<AVPacket> pktDispatcher(outputPktSQ, decodePktSQ);  // 将数据分别分发到上面两个队列中，以供解码器和推送器分别使用
     SQueue<cv::Mat> frameSQ;
     SQueue<ResultType, cv::Mat> resultFrameSQ;
 
     // 声明任务线程对象
-    Puller<decltype(puller), decltype(pktSQ)> tpuller(puller, pktSQ);
-    Pusher<decltype(pusher), decltype(pktSQ)> tpusher(pusher, pktSQ);
-    Decoder<decltype(decoder), decltype(pktSQ), decltype(frameSQ)> tdecoder(decoder, pktSQ, frameSQ);
+    Puller<decltype(puller), decltype(pktDispatcher)> tpuller(puller, pktDispatcher);
+    Pusher<decltype(pusher), decltype(outputPktSQ)> tpusher(pusher, outputPktSQ);
+    Decoder<decltype(decoder), decltype(decodePktSQ), decltype(frameSQ)> tdecoder(decoder, decodePktSQ, frameSQ);
     Detector<DetectorType, decltype(frameSQ), decltype(resultFrameSQ)> tdetector(detector, frameSQ, resultFrameSQ);
     Alerter<decltype(alerter), decltype(resultFrameSQ)> talerter(alerter, resultFrameSQ);
 

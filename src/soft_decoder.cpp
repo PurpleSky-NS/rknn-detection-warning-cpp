@@ -77,5 +77,6 @@ std::shared_ptr<cv::Mat> SoftDecoder::Decode(std::shared_ptr<AVPacket> pkt)
             return std::make_shared<cv::Mat>(cv::Mat(_codecCtx->height, _codecCtx->width, CV_8UC3, _imageBuffer).clone());
         }
     }
+    spdlog::error("解码失败！");
     return std::shared_ptr<cv::Mat>();
 }
