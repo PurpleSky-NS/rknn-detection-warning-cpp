@@ -7,7 +7,6 @@
 #include <fstream>
 #include <spdlog/spdlog.h>
 #include <argparse/argparse.hpp>
-// #include <random>
 #include "stream/decoder/soft.h"
 #include "stream/decoder/decoder.hpp"
 #include "stream/puller/opencv.h"
@@ -23,8 +22,6 @@
 #include "draw/drawer.hpp"
 #include "alert/alert.h"
 #include "alert/alerter.hpp"
-// #include "drawer/cxvFont.hpp"
-#include "timer.h"
 #include "queues.hpp"
 #include "alert/track/tracker.h"
 #include "alert/track/tracking.h"
@@ -56,8 +53,10 @@
  *
  * @param runners 任务列表
  */
-void StartRunners(const std::vector<Runner*> runners)
+template<typename... RunnerType>
+void StartRunners(RunnerType&... runner)  // 可变模板参数列表真好玩
 {
+    std::array<Runner*, sizeof...(runner)> runners = {&runner...};
     // 启动所有任务
     std::for_each(runners.begin(), runners.end(), [](auto runner){runner->Start();});
     // 等待所有任务结束
@@ -83,10 +82,10 @@ void StartWithDF(DetectorType &detector, const argparse::ArgumentParser &program
     Puller<decltype(puller), decltype(inputSQ)> tpuller(puller, inputSQ);
     Pusher<decltype(pusher), decltype(outputSQ)> tpusher(pusher, outputSQ);
     Drawer<decltype(drawer), decltype(resultFrameSQ), decltype(inputSQ), decltype(outputSQ)> tdrawer(drawer, resultFrameSQ, inputSQ, outputSQ);
-    Detector<DetectorType, decltype(inputSQ), decltype(resultFrameSQ)> tdetector(detector, inputSQ, resultFrameSQ);
+    Detector<DetectorType, decltype(inputSQ), decltype(resultFrameSQ)> tdetector(detector, inputSQ, resultFrameSQ, program.get<uint>("skip_frame"));
     Alerter<decltype(alerter), decltype(resultFrameSQ)> talerter(alerter, resultFrameSQ);
 
-    StartRunners({&tpuller, &tpusher, &tdetector, &tdrawer, &talerter});
+    StartRunners(tpuller, tpusher, tdetector, tdrawer, talerter);
 }
 
 template<typename DetectorType>
@@ -110,10 +109,10 @@ void StartWithoutDF(DetectorType &detector, const argparse::ArgumentParser &prog
     Puller<decltype(puller), decltype(pktDispatcher)> tpuller(puller, pktDispatcher);
     Pusher<decltype(pusher), decltype(outputPktSQ)> tpusher(pusher, outputPktSQ);
     Decoder<decltype(decoder), decltype(decodePktSQ), decltype(frameSQ)> tdecoder(decoder, decodePktSQ, frameSQ);
-    Detector<DetectorType, decltype(frameSQ), decltype(resultFrameSQ)> tdetector(detector, frameSQ, resultFrameSQ);
+    Detector<DetectorType, decltype(frameSQ), decltype(resultFrameSQ)> tdetector(detector, frameSQ, resultFrameSQ, program.get<uint>("skip_frame"));
     Alerter<decltype(alerter), decltype(resultFrameSQ)> talerter(alerter, resultFrameSQ);
 
-    StartRunners({&tpuller, &tpusher, &tdecoder, &tdetector, &talerter});
+    StartRunners(tpuller, tpusher, tdecoder, tdetector, talerter);
 }
 
 int main(int argc, char const *argv[])
@@ -136,9 +135,11 @@ int main(int argc, char const *argv[])
     program.add_argument("--disable_draw_video_box").flag().help("关闭视频画面绘制识别框");
 
     // 追踪参数
+    program.add_argument("--skip_frame").default_value(1u).scan<'u', uint>().help("实现跳帧检测，设置为1表示不跳帧，设置为n表示跳n帧，即每隔n帧进行一次检测");
     program.add_argument("--track_time_threshhold").default_value(1.0f).scan<'f', float>().help("设置追踪时间阈值（秒），每过一次这个时间会确认一次物体是否停留在画面中");
     program.add_argument("--track_enter_percent_threshhold").default_value(0.6f).scan<'f', float>().help("认为物体在画面中的检测比");
     program.add_argument("--track_leave_percent_threshhold").default_value(0.f).help("认为物体不在画面中的检测比（设为0表示只要物体在一次时间阈值中任意出现在画面中一次即可）");
+    program.add_argument("--track_sim_threshhold").default_value(0.25f).help("追踪时，判断前后两帧两个物体是否是同一个物体的物体未知相似度，采用带权重的eiou算法，范围为0~1，数值越小，新一帧检测到的物体匹配到的概率越大");
 
     // 报警参数
     program.add_argument("--alert_collect_url").required().help("报警收集地址");
@@ -147,10 +148,10 @@ int main(int argc, char const *argv[])
     program.add_argument("--ai_region").nargs(argparse::nargs_pattern::any).help("检测区域信息");
     program.add_argument("--alert").nargs(argparse::nargs_pattern::any).help("报警设置信息");
 
-    // 调试使用
-    program.at("--input").default_value("rtsp://admin:a123456789@192.168.1.65:554/Streaming/Channels/101?transportmode=unicast&profile=Profile_1");
-    program.at("--output").default_value("rtmp://192.168.1.173/live/1699323368155858390");
-    program.at("--alert_collect_url").default_value("http://localhost:5000/alert/collect/1699323368155858390");
+    // // 调试使用
+    // program.at("--input").default_value("rtsp://admin:a123456789@192.168.1.65:554/Streaming/Channels/101?transportmode=unicast&profile=Profile_1");
+    // program.at("--output").default_value("rtmp://192.168.1.173/live/1699323368155858390");
+    // program.at("--alert_collect_url").default_value("http://localhost:5000/alert/collect/1699323368155858390");
 
     try {
         program.parse_args(argc, argv);
@@ -171,6 +172,7 @@ int main(int argc, char const *argv[])
     Tracker::SetTrackTimeThreshhold(std::chrono::milliseconds(static_cast<uint>(program.get<float>("track_time_threshhold") * 1000)));
     Tracker::SetTrackEnterPercentThreshhold(program.get<float>("track_enter_percent_threshhold"));
     Tracker::SetTrackLeavePercentThreshhold(program.get<float>("track_leave_percent_threshhold"));
+    Tracking::SetTrackSimThreshhold(program.get<float>("track_sim_threshhold"));
     // 设置事件触发器参数
     Trigger::SetAlertUrl(program.get("alert_collect_url"));  // 设置报警Url
     Trigger::SetDrawBox(!program.get<bool>("disable_draw_alert_box"));  // 设置是否绘制报警框

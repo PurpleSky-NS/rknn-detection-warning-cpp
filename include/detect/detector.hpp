@@ -9,20 +9,21 @@ template<typename DetectorType, typename FrameQueueType, typename ResultQueueTyp
 class Detector: public Runner
 {
 public:
-    Detector(DetectorType &detector, FrameQueueType &frameQueue, ResultQueueType &resultFrameQueue): 
-        _detector(detector), _frameQueue(frameQueue), _resultFrameQueue(resultFrameQueue) {}
+    Detector(DetectorType &detector, FrameQueueType &frameQueue, ResultQueueType &resultFrameQueue, uint skipFrame = 1): 
+        _detector(detector), _frameQueue(frameQueue), _resultFrameQueue(resultFrameQueue), _skipFrame(skipFrame) {}
 
 protected:
     void Run(){
         auto [frame] = _frameQueue.Get(_frameQueueId);
-        auto result = _detector.Detect(frame);
-        _resultFrameQueue.Put(result, frame);
+        if(_frameQueueId.id % _skipFrame == 0)
+            _resultFrameQueue.Put(_detector.Detect(frame), frame);
     }
 private:
     DetectorType &_detector;
     typename FrameQueueType::DataID _frameQueueId;
     FrameQueueType &_frameQueue;
     ResultQueueType &_resultFrameQueue;
+    uint _skipFrame = 0;
 };
 
 // 负责启动一个线程从帧队列里拉数据并用detector检测后放入resultQueue中
