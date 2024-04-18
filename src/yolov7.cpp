@@ -1,9 +1,8 @@
 #include "detect/yolov7.h"
-
 #include <exception>
 #include <fstream>
 #include <spdlog/spdlog.h>
-#include "timer.h"
+#include "timer.hpp"
 
 Yolov7::Yolov7(const std::string &modelPath)
 {
@@ -174,6 +173,9 @@ bool Yolov7::SetNMSThresh(float conf)
  */
 ResultType Yolov7::Detect(const cv::Mat &image)
 {
+    static FPSCounter counter("目标检测");
+    counter.Update();
+
     RecalcScale(image.size());
     auto dstImage = Preprocess(image);
     _input.buf = dstImage.data;

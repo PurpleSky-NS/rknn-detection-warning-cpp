@@ -2,6 +2,14 @@
 
 #include <spdlog/spdlog.h>
 
+bool Tracking::SetTrackSimThreshhold(double threshhold)
+{
+    if(_trackSimThreshhold <= 0)
+        return false;
+     _trackSimThreshhold = threshhold;
+     return true;
+}
+
 Tracking::Tracking(const std::unordered_set<size_t> &trackClasses):
     _onEnterCallback([](auto,auto,auto){}),
     _onLeaveCallback([](auto,auto,auto){}),
@@ -31,7 +39,7 @@ void Tracking::Update(const ResultType &results, std::shared_ptr<cv::Mat> image)
         for(auto &tracker: fd->second){
             auto sim = tracker.second->CalcSim(obj.box);
             // 找最大位置相似度物体，并且必须大于最小位置相似度
-            if(sim > maxSim && sim > _trackSimThreshhold){
+            if(sim > maxSim && sim >= _trackSimThreshhold){
                 maxSim = sim;
                 maxSimObj = tracker.second;
             }

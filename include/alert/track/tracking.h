@@ -11,6 +11,9 @@
 class Tracking
 {
 public:
+    // 设置追踪时间阈值
+    static bool SetTrackSimThreshhold(double threshhold);
+
     using OnObjectChanges = std::function<void(STracker, const TrackerWorld&, std::shared_ptr<cv::Mat>)>;
     using OnObjectsUpdate = std::function<void(const TrackerWorld&, std::shared_ptr<cv::Mat>)>;
 

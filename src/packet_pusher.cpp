@@ -81,7 +81,11 @@ PacketPusher &PacketPusher::operator<<(AVPacket &oriPkt)
     pkt.dts = av_rescale_q_rnd(pkt.dts, inputStream->time_base, outputStream->time_base, AVRounding(AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX));
     pkt.duration = av_rescale_q(pkt.duration, inputStream->time_base, outputStream->time_base);
     pkt.stream_index = 0;
-    if (av_interleaved_write_frame(_outputFmtCtx, &pkt) < 0)
-        spdlog::error("写入数据包时出错");
+    if (auto ret = av_interleaved_write_frame(_outputFmtCtx, &pkt); ret < 0) {
+        char errBuf[1024];
+        av_strerror(ret, errBuf, sizeof(errBuf));
+        spdlog::error("写入数据包时出错：{}", errBuf);
+        throw std::runtime_error("推流失败");
+    }
     return *this;
 }

@@ -5,7 +5,6 @@
 #include <opencv2/opencv.hpp>
 #include <rknn_api.h>
 #include "type.h"
-#include "timer.h"
 
 
 // 为节省反复申请内存的开销，这个类的推理接口被设计为不能并发，但不同对象之间无所谓
