@@ -27,6 +27,11 @@ export VCPKG_ROOT={vcpkg根目录}
 ```
 
 安装程序所用依赖：
+
+*出现某文件下不下来的情况时，可以手动下载放到它指定的地方*
+
+*出现apt-get安装软件依赖冲突情况时，可使用aptitude工具手动选择冲突解决方案*
+
 ```bash
 vcpkg install spdlog
 vcpkg install argparse
@@ -36,6 +41,8 @@ vcpkg install cpp-base64
 vcpkg install opencv4
 # vcpkg install ffmpeg
 ```
+
+
 
 安装ffmpeg（现在程序里需要ffmepg的依赖以及ffpmeg程序，以后可能会去掉直接调用ffmpeg程序）
 ```bash
