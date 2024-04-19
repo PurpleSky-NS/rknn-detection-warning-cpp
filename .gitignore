@@ -33,3 +33,4 @@
 
 /build
 .vscode
+vcpkg_installed

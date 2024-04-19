@@ -15,7 +15,7 @@
 * 语言：C++17
 * 工具：CMake、vcpkg等
 
-## 安装依赖
+## 安装vcpkg
 采用vcpkg作为依赖管理工具，不能用vcpkg安装的依赖都放在3rd目录下了。
 
 安装vcpkg：
@@ -26,23 +26,19 @@ cd vcpkg
 export VCPKG_ROOT={vcpkg根目录}
 ```
 
-安装程序所用依赖：
+## 安装依赖
+
+安装程序所用依赖，依赖项在`vcpkg.json`中：
 
 *出现某文件下不下来的情况时，可以手动下载放到它指定的地方*
 
 *出现apt-get安装软件依赖冲突情况时，可使用aptitude工具手动选择冲突解决方案*
 
 ```bash
-vcpkg install spdlog
-vcpkg install argparse
-vcpkg install jsoncpp
-vcpkg install cpp-httplib
-vcpkg install cpp-base64
-vcpkg install opencv4
-# vcpkg install ffmpeg
+git clone https://gitee.com/purple-sky/edge-warning-cpp.git
+cd edge-warning-cpp
+vcpkg install
 ```
-
-
 
 安装ffmpeg（现在程序里需要ffmepg的依赖以及ffpmeg程序，以后可能会去掉直接调用ffmpeg程序）
 ```bash
@@ -51,8 +47,6 @@ sudo apt-get install ffmpeg
 
 ## 编译
 ```bash
-git clone https://gitee.com/purple-sky/edge-warning-cpp.git
-cd edge-warning-cpp
 mkdir build && cd build
 cmake .. -DCMAKE_TOOLCHAIN_FILE={vcpkg根目录}/scripts/buildsystems/vcpkg.cmake
 make -j8
