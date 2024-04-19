@@ -47,10 +47,18 @@ sudo apt-get install ffmpeg
 
 ## 编译
 ```bash
-mkdir build && cd build
-cmake .. -DCMAKE_TOOLCHAIN_FILE={vcpkg根目录}/scripts/buildsystems/vcpkg.cmake
-make -j8
+cmake -Bbuild --preset=default
+cmake --build build
 ```
+程序会生成在`build/bin`目录下。
+
+## VSCode开发
+
+1. 安装CMake Tools插件
+2. 在登录VSCode的用户对应的.bashrc中设置VCPKG_ROOT环境变量: `echo "export VCPKG_ROOT={vcpkg根目录}" >> ~/.bashrc`
+3. 重新登录VSCode应用环境变量
+4. 打开项目根目录，在下方工具栏选择default的预设，然后生成即可
+
 
 # 使用
 待续...

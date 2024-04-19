@@ -1,16 +1,21 @@
 aux_source_directory(. SRC_LIST)
 add_executable(main ${SRC_LIST})
 
-target_link_libraries(main PRIVATE rknn_api pthread avcodec avformat avutil swscale)
+target_link_libraries(main PRIVATE rknn_api pthread)
+
+find_package(FFMPEG MODULE)
+target_include_directories(main PRIVATE ${FFMPEG_INCLUDE_DIRS})
+target_link_directories(main PRIVATE ${FFMPEG_LIBRARY_DIRS})
+target_link_libraries(main PRIVATE avformat avcodec swscale)
+
+find_package(spdlog CONFIG REQUIRED)
+target_link_libraries(main PRIVATE spdlog::spdlog)
 
 find_package(OpenCV REQUIRED)
-message(STATUS "OpenCV library status:")
-message(STATUS "    version: ${OpenCV_VERSION}")
-message(STATUS "    libraries: ${OpenCV_LIBS}")
-message(STATUS "    include path: ${OpenCV_INCLUDE_DIRS}")
-message(STATUS "    static include: ${OpenCV_STATIC_INCLUDE_DIR}")
+message(STATUS "OpenCV version: ${OpenCV_VERSION}")
 include_directories(${OpenCV_INCLUDE_DIRS})
-target_link_libraries(main PRIVATE ${OpenCV_LIBS}) 
+# target_link_libraries(main PRIVATE opencv_core opencv_videoio)
+target_link_libraries(main PRIVATE ${OpenCV_LIBS})
 
 # find_package(Freetype REQUIRED)
 # message(STATUS "Freetype library status")

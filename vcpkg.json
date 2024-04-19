@@ -1,14 +1,19 @@
 {
-    "dependencies": [
-        "spdlog",
-        "argparse",
-        "jsoncpp",
-        "cpp-httplib",
-        "cpp-base64",
-        {
-            "name": "opencv4",
-            "default-features": false,
-            "features": ["jpeg", "png", "ffmpeg"]
-        }
-    ]
-  }
+  "dependencies": [
+    "argparse",
+    "cpp-base64",
+    "cpp-httplib",
+    "jsoncpp",
+    "spdlog",
+    "ffmpeg",
+    {
+      "name": "opencv4",
+      "default-features": false,
+      "features": [
+        "jpeg",
+        "png",
+        "ffmpeg"
+      ]
+    }
+  ]
+}
