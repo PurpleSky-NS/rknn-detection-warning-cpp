@@ -70,7 +70,7 @@ void StartWithDF(DetectorType &detector, const argparse::ArgumentParser &program
     OpencvPuller puller(program.get("input"));
     FFmpegPusher pusher(program.get("output"), puller.GetWidth(), puller.GetHeight(), puller.GetFPS());
     LightAlerter alerter(
-        program.get<std::vector<std::string>>("ai_region"), puller.GetWidth(), puller.GetHeight(), 
+        program.get<std::vector<std::string>>("region"), puller.GetWidth(), puller.GetHeight(), 
         program.get<std::vector<std::string>>("alert"), detector.GetClasses()
     );
     OpencvDrawer drawer;
@@ -96,7 +96,7 @@ void StartWithoutDF(DetectorType &detector, const argparse::ArgumentParser &prog
     PacketPusher pusher(puller, program.get("output"));
     SoftDecoder decoder(puller);
     LightAlerter alerter(
-        program.get<std::vector<std::string>>("ai_region"), puller.GetWidth(), puller.GetHeight(), 
+        program.get<std::vector<std::string>>("region"), puller.GetWidth(), puller.GetHeight(), 
         program.get<std::vector<std::string>>("alert"), detector.GetClasses()
     );
 
@@ -126,16 +126,18 @@ int main(int argc, char const *argv[])
     program.add_argument("--model").default_value("model.rknn").help("RKNN模型");
     program.add_argument("--anchors_file").default_value("anchors.txt").help("Anchors文件位置，如果你的模型包含Grid操作，则无需该文件");
     program.add_argument("--classes_file").default_value("classes.txt").help("Classes文件位置，目前只支持英文名称");
-    program.add_argument("--obj_thresh").default_value(0.65f).scan<'f', float>().help("对象类别阈值，范围为0~1，置信度为该阈值以下的预测框在检测中会被过滤");
-    program.add_argument("--nms_thresh").default_value(0.45f).scan<'f', float>().help("NMS的IOU阈值，范围为0~1，该数值是为了过滤过近的预测框，其值越大，保留的预测框越多");
-    
+
     // 视频参数
     program.add_argument("--input").required().help("输入视频流");
     program.add_argument("--output").required().help("输出视频流");
     program.add_argument("--disable_draw_video_box").flag().help("关闭视频画面绘制识别框");
 
-    // 追踪参数
+    // 检测参数
+    program.add_argument("--obj_thresh").default_value(0.65f).scan<'f', float>().help("对象类别阈值，范围为0~1，置信度为该阈值以下的预测框在检测中会被过滤");
+    program.add_argument("--nms_thresh").default_value(0.45f).scan<'f', float>().help("NMS的IOU阈值，范围为0~1，该数值是为了过滤过近的预测框，其值越大，保留的预测框越多");
     program.add_argument("--skip_frame").default_value(1u).scan<'u', uint>().help("实现跳帧检测，设置为1表示不跳帧，设置为n表示跳n帧，即每隔n帧进行一次检测");
+
+    // 追踪参数
     program.add_argument("--track_time_threshhold").default_value(1.0f).scan<'f', float>().help("设置追踪时间阈值（秒），每过一次这个时间会确认一次物体是否停留在画面中");
     program.add_argument("--track_enter_percent_threshhold").default_value(0.6f).scan<'f', float>().help("认为物体在画面中的检测比");
     program.add_argument("--track_leave_percent_threshhold").default_value(0.f).help("认为物体不在画面中的检测比（设为0表示只要物体在一次时间阈值中任意出现在画面中一次即可）");
@@ -145,7 +147,7 @@ int main(int argc, char const *argv[])
     program.add_argument("--alert_collect_url").required().help("报警收集地址");
     program.add_argument("--disable_draw_alert_box").flag().help("关闭报警图像绘制识别框");
 
-    program.add_argument("--ai_region").nargs(argparse::nargs_pattern::any).help("检测区域信息");
+    program.add_argument("--region").nargs(argparse::nargs_pattern::any).help("检测区域信息");
     program.add_argument("--alert").nargs(argparse::nargs_pattern::any).help("报警设置信息");
 
     // // 调试使用
