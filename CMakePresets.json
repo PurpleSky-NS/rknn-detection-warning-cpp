@@ -2,11 +2,32 @@
     "version": 2,
     "configurePresets": [
       {
-        "name": "default",
+        "name": "base",
         "generator": "Ninja",
         "binaryDir": "${sourceDir}/build",
         "cacheVariables": {
           "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+        }
+      },
+      {
+        "name": "debug",
+        "inherits": "base",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Debug"
+        }
+      },
+      {
+        "name": "release",
+        "inherits": "base",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Release"
+        }
+      },
+      {
+        "name": "min-release",
+        "inherits": "base",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "MinSizeRel"
         }
       }
     ]

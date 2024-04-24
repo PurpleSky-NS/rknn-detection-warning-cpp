@@ -1,12 +1,10 @@
 aux_source_directory(. SRC_LIST)
 add_executable(main ${SRC_LIST})
 
-target_link_libraries(main PRIVATE rknn_api pthread)
-
 find_package(FFMPEG MODULE)
 target_include_directories(main PRIVATE ${FFMPEG_INCLUDE_DIRS})
 target_link_directories(main PRIVATE ${FFMPEG_LIBRARY_DIRS})
-target_link_libraries(main PRIVATE avformat avcodec swscale)
+target_link_libraries(main PRIVATE avformat swscale)
 
 find_package(spdlog CONFIG REQUIRED)
 target_link_libraries(main PRIVATE spdlog::spdlog)
@@ -14,8 +12,8 @@ target_link_libraries(main PRIVATE spdlog::spdlog)
 find_package(OpenCV REQUIRED)
 message(STATUS "OpenCV version: ${OpenCV_VERSION}")
 include_directories(${OpenCV_INCLUDE_DIRS})
-# target_link_libraries(main PRIVATE opencv_core opencv_videoio)
-target_link_libraries(main PRIVATE ${OpenCV_LIBS})
+target_link_libraries(main PRIVATE opencv_core opencv_videoio)
+# target_link_libraries(main PRIVATE ${OpenCV_LIBS})
 
 # find_package(Freetype REQUIRED)
 # message(STATUS "Freetype library status")
@@ -41,3 +39,5 @@ target_link_libraries(main PRIVATE httplib::httplib)
 find_path(CPP_BASE64_SOURCE_DIR "cpp-base64/base64.cpp")
 aux_source_directory(${CPP_BASE64_SOURCE_DIR}/cpp-base64 CPP_BASE64_SOURCE)
 target_sources(main PRIVATE ${CPP_BASE64_SOURCE})
+
+target_link_libraries(main PRIVATE pthread librknn_api.so)

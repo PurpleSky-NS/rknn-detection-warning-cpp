@@ -47,7 +47,9 @@ sudo apt-get install ffmpeg
 
 ## 编译
 ```bash
-cmake -Bbuild --preset=default
+cmake -Bbuild --preset=release
+# cmake -Bbuild --preset=debug
+# cmake -Bbuild --preset=min-release
 cmake --build build
 ```
 程序会生成在`build/bin`目录下。
