@@ -39,7 +39,7 @@ protected:
     // 认为物体不在画面中的检测比（设为0表示只要物体在一次时间阈值中任意出现在画面中一次即可）
     inline static double _trackLeavePercentThreshhold = 0.0;
     // 最多轨迹存储数量
-    inline static size_t _maxTrajectoryCount = 200;
+    inline static size_t _maxTrajectoryCount = 100;
 
     std::chrono::steady_clock::time_point _lastTrackTime;
     size_t _exTrackCount, _totalTrackCount;
