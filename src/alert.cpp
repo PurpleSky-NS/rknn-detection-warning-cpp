@@ -23,17 +23,17 @@ TriggerAlerter::TriggerAlerter(
             throw std::invalid_argument("报警器构造失败");
         }
         auto name = root["name"].asString();
-        std::vector<cv::Point2f> regionPoints;
-        cv::Point2f point;
+        std::vector<Point> regionPoints;
+        Point point;
         auto &region = root["region"];
         // 区域的信息为归一化的x1,y1,x2,y2...
         for(int i=0; i<region.size(); ++i){
             if(i%2){
-                point.y = region[i].asFloat() * h;
+                point.y = static_cast<int>(region[i].asFloat() * h);
                 regionPoints.push_back(point);
             }
             else
-                point.x = region[i].asFloat() * w;
+                point.x = static_cast<int>(region[i].asFloat() * w);
         }
         regionMap[name] = _regions.size();
         _regions.emplace_back(name, regionPoints);
@@ -85,4 +85,8 @@ void TriggerAlerter::Update(std::shared_ptr<TrackerWorld> trackerWorld, std::sha
 const std::unordered_set<size_t> &TriggerAlerter::GetAlertClasses()const
 {
     return _trackClasses;
+}
+const std::vector<Region> &TriggerAlerter::GetRegions()const
+{
+    return _regions;
 }

@@ -16,7 +16,11 @@ public:
     // 更新所有区域
     void Update(std::shared_ptr<TrackerWorld> trackers, std::shared_ptr<cv::Mat> image);
 
+    // 获取所有追踪类
     const std::unordered_set<size_t> &GetAlertClasses()const;
+
+    // 获取所有追踪类
+    const std::vector<Region> &GetRegions()const;
 
 private:
     std::vector<Region> _regions;

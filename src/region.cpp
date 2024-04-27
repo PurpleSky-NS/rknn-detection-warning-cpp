@@ -7,7 +7,7 @@ Region::Region()
     spdlog::debug("已添加区域[整个画面]");
 }
 
-Region::Region(const std::string &name, const std::vector<cv::Point2f> &region):
+Region::Region(const std::string &name, const std::vector<Point> &region):
     _name(name), _region(region)
 {
     if(region.size() < 3){
@@ -42,7 +42,7 @@ void Region::Update(std::shared_ptr<TrackerWorld> trackerWorld, std::shared_ptr<
                 continue;
             // 当该区域是全图区域或者该物体在该区域时
             const auto &pos = tracker->GetObject().box.GetPos();
-            if(_region.empty() || cv::pointPolygonTest(_region, {static_cast<float>(pos.x), static_cast<float>(pos.y)}, false) == 1)
+            if(_region.empty() || cv::pointPolygonTest(_region, pos, false) == 1)
                 Enter(tracker, image, fd->second);
             else
                 Leave(tracker, image, fd->second);
@@ -81,4 +81,9 @@ void Region::Leave(STracker tracker, std::shared_ptr<cv::Mat> image, TrackerSet 
     trackerSet.erase(fd);
     for(auto &trigger: _triggers[tracker->GetObject().classIndex])
         trigger->Leave(tracker, _objects[tracker->GetObject().classIndex], image);
+}
+
+const std::vector<Point> &Region::GetRegion()const
+{
+    return _region;
 }

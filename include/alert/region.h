@@ -12,7 +12,8 @@ class Region
 {
 public:
     Region();
-    Region(const std::string &name, const std::vector<cv::Point2f> &region);
+    Region(const std::string &name, const std::vector<Point> &region);
+    Region(const Region&) = default;
 
     // 添加trigger
     void AddTrigger(size_t classID, STrigger trigger);
@@ -23,9 +24,12 @@ public:
     // 更新
     void Update(std::shared_ptr<TrackerWorld> trackerWorld, std::shared_ptr<cv::Mat> image);
 
+    // 获取区域位置
+    const std::vector<Point> &GetRegion()const;
+
 private:
     std::string _name;  // 这个区域的名称
-    std::vector<cv::Point2f> _region;  // 这个区域的位置
+    std::vector<Point> _region;  // 这个区域的位置
     std::unordered_map<size_t, std::vector<STrigger>> _triggers;  // 这个区域的报警触发器们
     TrackerWorld _objects;  // 这个区域的物体们
     

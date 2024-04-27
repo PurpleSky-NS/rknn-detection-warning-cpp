@@ -61,7 +61,7 @@ void StartWithDF(DetectorType &detector, const argparse::ArgumentParser &program
         program.get<std::vector<std::string>>("alert"), detector.GetClasses()
     );  // 这个解析需要什么对象的追踪
     LightTracking tracking(alerter.GetAlertClasses());  // 然后传给追踪器
-    OpencvDrawer drawer;
+    OpencvDrawer drawer(alerter.GetRegions(), puller.GetWidth(), puller.GetHeight());
 
     SQueue<cv::Mat> inputSQ, outputSQ;
     SQueue<ResultType, cv::Mat> resultFrameSQ;
@@ -105,7 +105,7 @@ void StartWithoutDF(DetectorType &detector, const argparse::ArgumentParser &prog
     Tracking<decltype(tracking), decltype(resultFrameSQ), decltype(trackingFrameSQ)> ttracking(tracking, resultFrameSQ, trackingFrameSQ);
     Alerter<decltype(alerter), decltype(trackingFrameSQ)> talerter(alerter, trackingFrameSQ);
 
-    StartRunners(tpuller, tpusher, tdecoder, tdetector, talerter);
+    StartRunners(tpuller, tpusher, tdecoder, tdetector, ttracking, talerter);
 }
 
 int main(int argc, char const *argv[])
