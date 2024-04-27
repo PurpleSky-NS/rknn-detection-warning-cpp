@@ -19,7 +19,7 @@ public:
     const Object &GetObject()const;
 
     // 获取物体进入时的位置
-    const Box &GetEnterBox()const;
+    const Point &GetEnterPoint()const;
 
     // 获取追踪轨迹
     const std::deque<Point> &GetTrajectory()const;
@@ -49,7 +49,7 @@ protected:
     bool _exists;
     std::chrono::steady_clock::time_point _createTime, _currentTime;
     std::shared_ptr<cv::Mat> _lastTrackImage;
-    Box _enterBox;  // 物体进入时的位置
+    Point _enterPoint;  // 物体进入时的位置
     std::deque<Point> _trajectory;  // 追踪轨迹
 };
 
@@ -64,7 +64,7 @@ inline Tracker::Tracker(const Object &obj, size_t id):
     _exists(false),
     _createTime(std::chrono::steady_clock::now()),
     _currentTime(_createTime),
-    _enterBox(obj.box)
+    _enterPoint(obj.box.GetPos())
 {
     spdlog::debug("[({}){}] 开始追踪", _obj.className, _id);
 }
@@ -74,9 +74,9 @@ inline const Object &Tracker::GetObject()const
     return _obj;
 }
 
-inline const Box &Tracker::GetEnterBox()const
+inline const Point &Tracker::GetEnterPoint()const
 {
-    return _enterBox;
+    return _enterPoint;
 }
 
 inline const std::deque<Point> &Tracker::GetTrajectory()const

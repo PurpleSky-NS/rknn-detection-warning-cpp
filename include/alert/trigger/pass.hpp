@@ -28,7 +28,7 @@ public:
 
     void Leave(STracker tracker, const TrackerSet &trackers, std::shared_ptr<cv::Mat> image)
     {
-        auto enterPos = tracker->GetEnterBox().GetPos();
+        auto enterPos = tracker->GetEnterPoint();
         auto leavePos = tracker->GetObject().box.GetPos();
         auto alert = false;
         if(_direction == UP)
