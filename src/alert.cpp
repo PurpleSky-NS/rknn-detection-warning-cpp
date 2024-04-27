@@ -3,12 +3,11 @@
 #include <json/json.h>
 #include <spdlog/spdlog.h>
 
-LightAlerter::LightAlerter(
+TriggerAlerter::TriggerAlerter(
     const std::vector<std::string> &regionsInfo, size_t w, size_t h, 
     const std::vector<std::string> &alertsInfo, const std::vector<std::string> &classes
 )
 {
-    std::unordered_set<size_t> trackClasses;
     std::unordered_map<std::string, size_t> regionMap, classMap;
 
     for(size_t i=0; i<classes.size(); ++i)
@@ -56,7 +55,7 @@ LightAlerter::LightAlerter(
             throw std::invalid_argument("报警器构造失败");
         }
         _regions[regionFd->second].AddTrigger(classFd->second, trigger);
-        trackClasses.insert(classFd->second);
+        _trackClasses.insert(classFd->second);
     }
     for(auto i=_regions.begin(); i!=_regions.end();)
         if(i->Empty())
@@ -66,39 +65,24 @@ LightAlerter::LightAlerter(
     _regions.shrink_to_fit();
     spdlog::debug("事件触发器构造结束，共计{}有效区域", _regions.size());
 
-    _tracking.reset(new Tracking(trackClasses));
-    if(!trackClasses.empty())
+    if(!_trackClasses.empty())
         spdlog::debug(
             "追踪器已构建，将对画面中的[{}]进行追踪", 
             std::accumulate(
-                ++trackClasses.begin(), trackClasses.end(), 
-                classes[*trackClasses.begin()], 
+                ++_trackClasses.begin(), _trackClasses.end(), 
+                classes[*_trackClasses.begin()], 
                 [&classes](auto &s, auto val){return s + (", " + classes[val]);}
             )
         );
-
-    _tracking->SetLeaveCallback(std::bind(&LightAlerter::OnLeave, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-    _tracking->SetUpdateCallback(std::bind(&LightAlerter::OnUpdate, this, std::placeholders::_1, std::placeholders::_2));
 }
 
-void LightAlerter::OnLeave(STracker tracker, const TrackerWorld &trackers, std::shared_ptr<cv::Mat> image)
+void TriggerAlerter::Update(std::shared_ptr<TrackerWorld> trackerWorld, std::shared_ptr<cv::Mat> image)
 {
-    if(_regions.empty())
-        return;
     for(auto &region: _regions)
-        region.ObjectLeave(tracker, image);
+        region.Update(trackerWorld, image);
 }
 
-void LightAlerter::OnUpdate(const TrackerWorld &trackers, std::shared_ptr<cv::Mat> image)
+const std::unordered_set<size_t> &TriggerAlerter::GetAlertClasses()const
 {
-    if(_regions.empty())
-        return;
-    // 这个会触发各个区域/触发器的Enter/Leave
-    for(auto &[_, trackerSet]: trackers)
-        for(auto &[_, tracker]: trackerSet)
-            for(auto &region: _regions)
-                region.ObjectUpdate(tracker, image);
-    // 这个会触发各个区域/触发器的Update
-    for(auto &region: _regions)
-        region.TriggerUpdate(image);
+    return _trackClasses;
 }

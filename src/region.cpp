@@ -29,37 +29,34 @@ bool Region::Empty()const
     return _triggers.empty();
 }
 
-void Region::TriggerUpdate(std::shared_ptr<cv::Mat> image)
+void Region::Update(std::shared_ptr<TrackerWorld> trackerWorld, std::shared_ptr<cv::Mat> image)
 {
+    for(auto &[classID, trackers]: *trackerWorld){
+        // 一类一类判断，如果这个类不在这个区域的追踪范围则直接忽略
+        auto fd = _objects.find(classID);
+        if(fd == _objects.end())
+            continue;
+        auto trackerSet = fd->second;  // 建立个not found集合，剩下的物体都是not found，算离开
+        for(auto &[id, tracker]: trackers){
+            if(!tracker->Exists())
+                continue;
+            // 当该区域是全图区域或者该物体在该区域时
+            const auto &pos = tracker->GetObject().box.GetPos();
+            if(_region.empty() || cv::pointPolygonTest(_region, {static_cast<float>(pos.x), static_cast<float>(pos.y)}, false) == 1)
+                Enter(tracker, image, fd->second);
+            else
+                Leave(tracker, image, fd->second);
+            trackerSet.erase(id);  // 不算not found了
+        }
+        for(auto &[_, tracker]: trackerSet)
+            Leave(tracker, image, fd->second);  // 剩下的都是not found，算离开
+    }
+    // 进入/离开都更新完了，更新触发器的Update
     for(auto &[classID, triggers]: _triggers){
         auto objs = _objects[classID];
         for(auto &trigger: triggers)
             trigger->Update(objs, image);
     }
-}
-
-// 更新单个画面中存在的物体
-void Region::ObjectUpdate(STracker tracker, std::shared_ptr<cv::Mat> image)
-{
-    auto fd = _objects.find(tracker->GetObject().classIndex);
-    if(fd == _objects.end())
-        return;
-
-    // 当该区域是全图区域或者该物体在该区域时
-    const auto &pos = tracker->GetObject().box.GetPos();
-    if(_region.empty() || cv::pointPolygonTest(_region, {static_cast<float>(pos.x), static_cast<float>(pos.y)}, false) == 1)
-        Enter(tracker, image, fd->second);
-    else
-        Leave(tracker, image, fd->second);
-}
-
-void Region::ObjectLeave(STracker tracker, std::shared_ptr<cv::Mat> image)
-{
-    auto fd = _objects.find(tracker->GetObject().classIndex);
-    if(fd == _objects.end())
-        return;
-    
-    Leave(tracker, image, fd->second);
 }
     
 void Region::Enter(STracker tracker, std::shared_ptr<cv::Mat> image, TrackerSet &trackerSet)
@@ -81,8 +78,7 @@ void Region::Leave(STracker tracker, std::shared_ptr<cv::Mat> image, TrackerSet 
         return;
     // 有物体离开该区域
     spdlog::debug("({})物体[{}]离开区域[{}]", tracker->GetID(), tracker->GetObject().className, _name);
-    trackerSet.erase(tracker->GetID());
-    trackerSet[tracker->GetID()] = tracker;
+    trackerSet.erase(fd);
     for(auto &trigger: _triggers[tracker->GetObject().classIndex])
         trigger->Leave(tracker, _objects[tracker->GetObject().classIndex], image);
 }

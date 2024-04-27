@@ -2,7 +2,7 @@
 
 #include <spdlog/spdlog.h>
 #include <httplib.h>
-#include "alert/track/tracker.h"
+#include "tracking/tracker.hpp"
 
 class Trigger
 {

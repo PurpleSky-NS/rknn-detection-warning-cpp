@@ -1,13 +1,15 @@
 #pragma once
 
+#include <opencv2/core.hpp>
 #include <string>
 #include <vector>
 
 // 可通过{x,y}赋值
-struct Point{
-    int x;
-    int y;
-};
+// struct Point{
+//     int x;
+//     int y;
+// };
+using Point = cv::Point;
 
 // 可通过{x,y,w,h}赋值
 struct Box{

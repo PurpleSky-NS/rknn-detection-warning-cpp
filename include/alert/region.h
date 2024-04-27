@@ -4,7 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <opencv2/opencv.hpp>
-#include "alert/track/tracker.h"
+#include "tracking/tracker.hpp"
 #include "alert/trigger/trigger.h"
 
 // 提供单区域报警触发器管理
@@ -20,14 +20,8 @@ public:
     // 若该区域是否有Trigger
     bool Empty()const;
     
-    // 调用该区域所有触发器的更新
-    void TriggerUpdate(std::shared_ptr<cv::Mat> image);
-
-    // 更新单个画面中存在的物体
-    void ObjectUpdate(STracker tracker, std::shared_ptr<cv::Mat> image);
-
-    // 更新单个画面从中离开的物体
-    void ObjectLeave(STracker tracker, std::shared_ptr<cv::Mat> image);
+    // 更新
+    void Update(std::shared_ptr<TrackerWorld> trackerWorld, std::shared_ptr<cv::Mat> image);
 
 private:
     std::string _name;  // 这个区域的名称

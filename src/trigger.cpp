@@ -38,7 +38,7 @@ void Trigger::Alert(const std::vector<STracker> &objs, std::shared_ptr<const cv:
             boxValue.append(box.y);
             boxValue.append(box.x + box.w);
             boxValue.append(box.y + box.h);
-            information[obj->GetID()] = boxValue;
+            information[obj->GetUID()] = boxValue;
         }
     }
     alert["information"] = information;

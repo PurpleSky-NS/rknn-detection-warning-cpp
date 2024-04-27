@@ -1,8 +1,7 @@
-#include "alert/track/tracker.h"
-
+#include "tracking/light/tracker.h"
 #include <spdlog/spdlog.h>
 
-bool Tracker::SetTrackTimeThreshhold(std::chrono::milliseconds ms)
+bool LightTracker::SetTrackTimeThreshhold(std::chrono::milliseconds ms)
 {
     if(!ms.count())
         return false;
@@ -10,7 +9,7 @@ bool Tracker::SetTrackTimeThreshhold(std::chrono::milliseconds ms)
     return true;
 }
 
-bool Tracker::SetTrackEnterPercentThreshhold(double percent)
+bool LightTracker::SetTrackEnterPercentThreshhold(double percent)
 {
     if(percent < 0.0 || percent > 1.0)
         return false;
@@ -18,7 +17,7 @@ bool Tracker::SetTrackEnterPercentThreshhold(double percent)
     return true;
 }
 
-bool Tracker::SetTrackLeavePercentThreshhold(double percent)
+bool LightTracker::SetTrackLeavePercentThreshhold(double percent)
 {
     if(percent < 0.0 || percent > 1.0)
         return false;
@@ -26,21 +25,14 @@ bool Tracker::SetTrackLeavePercentThreshhold(double percent)
     return true;
 }
 
-Tracker::Tracker(const Object &obj): 
-    _obj(obj),
-    _id(ulid::Marshal(ulid::CreateNowRand())),
-    _exists(false),
-    _createTime(std::chrono::steady_clock::now()),
-    _currentTime(_createTime),
+LightTracker::LightTracker(const Object &obj, size_t id): 
+    Tracker(obj, id),
     _lastTrackTime(_createTime),
     _exTrackCount(1), 
-    _totalTrackCount(1),
-    _enterBox(obj.box)
-{
-    spdlog::debug("[({}){}] 开始追踪", _obj.className, _id);
-}
+    _totalTrackCount(1)
+{}
 
-double Tracker::CalcSim(const Box &box)const
+double LightTracker::CalcSim(const Box &box)const
 {
     double xmin1 = _obj.box.x, ymin1 = _obj.box.y, w1 = _obj.box.w, h1 = _obj.box.h;
     double xmin2 = box.x, ymin2 = box.y, w2 = box.w, h2 = box.h;
@@ -70,7 +62,7 @@ double Tracker::CalcSim(const Box &box)const
     return iou * 0.5 + shape_sim * 0.3 + dis_sim * 0.2;
 }
 
-Tracker::Action Tracker::Update(std::chrono::steady_clock::time_point time)
+LightTracker::Action LightTracker::Update(std::chrono::steady_clock::time_point time)
 {
     _currentTime = time;
     ++_totalTrackCount;
@@ -103,10 +95,13 @@ Tracker::Action Tracker::Update(std::chrono::steady_clock::time_point time)
     return NONE;
 }
 
-Tracker::Action Tracker::Update(std::chrono::steady_clock::time_point time, const Box &box, std::shared_ptr<cv::Mat> image)
+LightTracker::Action LightTracker::Update(std::chrono::steady_clock::time_point time, const Object &obj, std::shared_ptr<cv::Mat> image)
 {
-    _obj.box = box;
+    _obj = obj;
     _lastTrackImage = image;
     ++_exTrackCount;
+    if(_trajectory.size() == _maxTrajectoryCount)
+        _trajectory.pop_front();
+    _trajectory.push_back(obj.box.GetPos());
     return Update(time);
 }

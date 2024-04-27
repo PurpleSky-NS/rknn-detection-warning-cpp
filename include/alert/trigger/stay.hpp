@@ -35,5 +35,5 @@ public:
 
 private:
     uint _threshhold;  // 停留时间阈值
-    std::unordered_map<std::string, STracker> _stayTrackers;  // 存储所有目前留在画面上的物体
+    std::unordered_map<size_t, STracker> _stayTrackers;  // 存储所有目前留在画面上的物体
 };
