@@ -34,3 +34,5 @@
 /build
 .vscode
 vcpkg_installed
+test
+test.*

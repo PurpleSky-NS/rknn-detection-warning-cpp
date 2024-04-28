@@ -246,10 +246,11 @@ void Yolov7::NMS(ResultType &objects)const
             // 将点按 maxLength * boxes[0].classIndex 平移，以避免与不同类别的两个框发生碰撞
             // translate point by maxLength * boxes[0].classIndex to
             // avoid bumping into two boxes of different classes
-            float baseX = base.box.x + _modelSize * base.classIndex;
-            float baseY = base.box.y + _modelSize * base.classIndex;
-            float cmpX = cmp.box.x + _modelSize * cmp.classIndex;
-            float cmpY = cmp.box.y + _modelSize * cmp.classIndex;
+            float trans = static_cast<float>(_modelSize * base.classIndex);
+            float baseX = base.box.x + trans;
+            float baseY = base.box.y + trans;
+            float cmpX = cmp.box.x + trans;
+            float cmpY = cmp.box.y + trans;
 
             // 两个框的重叠部分
             // the overlapping part of the two boxes
