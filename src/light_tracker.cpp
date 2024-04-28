@@ -59,7 +59,7 @@ double LightTracker::CalcSim(const Box &box)const
     double xsum = (xmin1 + xmax1) / 2 - (xmin2 + xmax2) / 2, ysum = (ymin1 + ymax1) / 2 - (ymin2 + ymax2) / 2;
     double dis_sim = 1 - (xsum * xsum + ysum * ysum) / sum;
 
-    return iou * 0.5 + shape_sim * 0.3 + dis_sim * 0.2;
+    return iou * 0.4 + shape_sim * 0.3 + dis_sim * 0.3;
 }
 
 LightTracker::Action LightTracker::Update(std::chrono::steady_clock::time_point time)

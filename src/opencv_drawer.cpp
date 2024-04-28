@@ -1,21 +1,27 @@
 #include "draw/opencv.h"
 #include <fmt/core.h>
 
-OpencvDrawer::OpencvDrawer(const std::vector<Region> &regions, size_t w, size_t h):
-    _regionsMask(h, w, CV_8UC3, {0, 0, 0})
+OpencvDrawer::OpencvDrawer(const std::vector<Region> &regions, size_t w, size_t h)
 {
-    std::vector<std::vector<Point>> regionPts;
-    std::transform(regions.begin(), regions.end(), std::back_inserter(regionPts), [](const Region &region) {return region.GetRegion();});
-    cv::fillPoly(_regionsMask, regionPts, {0, 165, 255});
+    if(!regions.empty()) {
+        std::vector<std::vector<Point>> regionPts;
+        for(auto &region: regions)
+            if(!region.GetRegion().empty())
+                regionPts.push_back(region.GetRegion());
+        if(!regionPts.empty()){
+            _regionsMask = cv::Mat(h, w, CV_8UC3, {0, 0, 0});
+            cv::fillPoly(_regionsMask, regionPts, {0, 165, 255});
+        }
+    }
 }
-
 
 std::shared_ptr<cv::Mat> OpencvDrawer::DrawFrame(std::shared_ptr<cv::Mat> frame, std::shared_ptr<TrackerWorld> trackingResults)
 {
     // 画框
     if(trackingResults){
         auto image = std::make_shared<cv::Mat>(frame->clone());
-        cv::addWeighted(*image, 1, _regionsMask, 0.2, 0, *image);
+        if(!_regionsMask.empty())
+            cv::addWeighted(*image, 1, _regionsMask, 0.2, 0, *image);
         for (auto &[_, trackers]: *trackingResults) 
             for (auto &[_, tracker]: trackers){
                 DrawObject(

@@ -130,8 +130,8 @@ int main(int argc, char const *argv[])
     program.add_argument("--disable_draw_video_box").flag().help("关闭视频画面绘制识别框");
 
     // 检测参数
-    program.add_argument("--obj_thresh").default_value(0.65f).scan<'f', float>().help("对象类别阈值，范围为0~1，置信度为该阈值以下的预测框在检测中会被过滤");
-    program.add_argument("--nms_thresh").default_value(0.25f).scan<'f', float>().help("NMS的IOU阈值，范围为0~1，该数值是为了过滤过近的预测框，其值越大，保留的预测框越多");
+    program.add_argument("--obj_thresh").default_value(0.45f).scan<'f', float>().help("对象类别阈值，范围为0~1，置信度为该阈值以下的预测框在检测中会被过滤");
+    program.add_argument("--nms_thresh").default_value(0.45f).scan<'f', float>().help("NMS的IOU阈值，范围为0~1，该数值是为了过滤过近的预测框，其值越大，保留的预测框越多");
     program.add_argument("--skip_frame").default_value(1u).scan<'u', uint>().help("实现跳帧检测，设置为1表示不跳帧，设置为n表示跳n帧，即每隔n帧进行一次检测");
 
     // 追踪参数
