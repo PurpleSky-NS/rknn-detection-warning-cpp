@@ -110,11 +110,6 @@ void StartWithoutDF(DetectorType &detector, const argparse::ArgumentParser &prog
 
 int main(int argc, char const *argv[])
 {
-#ifdef NDEBUG
-    spdlog::set_level(spdlog::level::info);
-#else
-    spdlog::set_level(spdlog::level::debug);
-#endif
     spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [thread %t] %v");
 
     argparse::ArgumentParser program("Edge Warning");
@@ -143,9 +138,11 @@ int main(int argc, char const *argv[])
     // 报警参数
     program.add_argument("--alert_collect_url").required().help("报警收集地址");
     program.add_argument("--disable_draw_alert_box").flag().help("关闭报警图像绘制识别框");
-
     program.add_argument("--region").nargs(argparse::nargs_pattern::any).help("检测区域信息");
     program.add_argument("--alert").nargs(argparse::nargs_pattern::any).help("报警设置信息");
+
+    // 调试参数
+    program.add_argument("--debug_log").flag().help("开启调试日志");
 
     try {
         program.parse_args(argc, argv);
@@ -155,6 +152,11 @@ int main(int argc, char const *argv[])
         spdlog::critical(program.help().str());
         return 1;
     }
+
+    if(program.get<bool>("debug_log"))
+        spdlog::set_level(spdlog::level::debug);
+    else
+        spdlog::set_level(spdlog::level::info);
 
     Yolov7 detector(program.get("model"));
     detector.SetAnchors(program.get("anchors_file"));
