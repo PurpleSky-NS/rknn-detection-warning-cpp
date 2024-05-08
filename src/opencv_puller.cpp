@@ -27,7 +27,9 @@ OpencvPuller::OpencvPuller(const std::string &source)
 
 OpencvPuller &OpencvPuller::operator>>(cv::Mat &frame)
 {
-    _cap >> frame;
+    frame.release();
+    while(frame.empty())
+        _cap >> frame;
     ++_frameID;
     return *this;
 }
