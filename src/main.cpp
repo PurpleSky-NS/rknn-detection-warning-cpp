@@ -91,16 +91,16 @@ void StartWithoutDF(DetectorType &detector, const argparse::ArgumentParser &prog
     );
     LightTracking tracking(alerter.GetAlertClasses());  // 然后传给追踪器
 
-    TQueue<16, AVPacket> outputPktSQ, decodePktSQ;
-    Dispatcher<AVPacket> pktDispatcher(outputPktSQ, decodePktSQ);  // 将数据分别分发到上面两个队列中，以供解码器和推送器分别使用
+    TQueue<16, AVPacket> outputPktTQ, decodePktTQ;
+    Dispatcher<AVPacket> pktDispatcher(outputPktTQ, decodePktTQ);  // 将数据分别分发到上面两个队列中，以供解码器和推送器分别使用
     SQueue<cv::Mat> frameSQ;
     SQueue<ResultType, cv::Mat> resultFrameSQ;
     SQueue<TrackerWorld, cv::Mat> trackingFrameSQ;
 
     // 声明任务线程对象
     Puller<decltype(puller), decltype(pktDispatcher)> tpuller(puller, pktDispatcher);
-    Pusher<decltype(pusher), decltype(outputPktSQ)> tpusher(pusher, outputPktSQ);
-    Decoder<decltype(decoder), decltype(decodePktSQ), decltype(frameSQ)> tdecoder(decoder, decodePktSQ, frameSQ);
+    Pusher<decltype(pusher), decltype(outputPktTQ)> tpusher(pusher, outputPktTQ);
+    Decoder<decltype(decoder), decltype(decodePktTQ), decltype(frameSQ)> tdecoder(decoder, decodePktTQ, frameSQ);
     Detector<DetectorType, decltype(frameSQ), decltype(resultFrameSQ)> tdetector(detector, frameSQ, resultFrameSQ, program.get<uint>("skip_frame"));
     Tracking<decltype(tracking), decltype(resultFrameSQ), decltype(trackingFrameSQ)> ttracking(tracking, resultFrameSQ, trackingFrameSQ);
     Alerter<decltype(alerter), decltype(trackingFrameSQ)> talerter(alerter, trackingFrameSQ);
