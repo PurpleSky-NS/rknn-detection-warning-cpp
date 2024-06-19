@@ -105,11 +105,11 @@ STrigger Trigger::ParseTrigger(const std::string &triggerInfo)
     auto argsValue = root["args"];
 
     if(condition == "出现")
-        return STrigger(new EnterTrigger(event, object, region));
+        return std::make_shared<EnterTrigger>(event, object, region);
     else if(condition == "离开")
-        return STrigger(new LeaveTrigger(event, object, region));
+        return std::make_shared<LeaveTrigger>(event, object, region);
     else if(condition.find("经过") != std::string::npos)
-        return STrigger(new PassTrigger(event, object, region, condition));
+        return std::make_shared<PassTrigger>(event, object, region, condition);
     else if(condition.find("滞留") != std::string::npos){
         // 滞留触发器需要额外时间参数
         if(!argsValue.isArray() || argsValue.empty()){
@@ -121,7 +121,7 @@ STrigger Trigger::ParseTrigger(const std::string &triggerInfo)
             spdlog::critical("滞留事件触发器构造失败，传入的阈值时间不是数字：[{}]", value.asString());
             throw std::invalid_argument("构造事件触发器失败");
         }
-        return STrigger(new StayTrigger(event, object, region, value.asDouble()));
+        return std::make_shared<StayTrigger>(event, object, region, value.asDouble());
     }
     else if(condition.find("等于") != std::string::npos
         || condition.find("小于") != std::string::npos
@@ -137,7 +137,7 @@ STrigger Trigger::ParseTrigger(const std::string &triggerInfo)
             spdlog::critical("数量事件触发器构造失败，传入的数量不是非负数：[{}]", value.asString());
             throw std::invalid_argument("构造事件触发器失败");
         }
-        return STrigger(new CountTrigger(event, object, region, condition, value.asUInt()));
+        return std::make_shared<CountTrigger>(event, object, region, condition, value.asUInt());
     }
     spdlog::critical("生成事件触发器失败，未知的触发条件[{}]（事件名称为[{}]，对象为[{}]）", condition, event, object);
     throw std::invalid_argument("构造事件触发器失败");
