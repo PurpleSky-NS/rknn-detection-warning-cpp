@@ -7,6 +7,11 @@
 #include <fstream>
 #include <spdlog/spdlog.h>
 #include <argparse/argparse.hpp>
+#include <ulid/ulid.hh>
+#include <json/json.h>
+#include <httplib.h>
+#include <cpp-base64/base64.h>
+#include "queues.hpp"
 #include "stream/decoder/soft.h"
 #include "stream/decoder/decoder.hpp"
 #include "stream/puller/opencv.h"
@@ -20,17 +25,12 @@
 #include "detect/detector.hpp"
 #include "draw/opencv.h"
 #include "draw/drawer.hpp"
+#include "draw/draw.hpp"
 #include "alert/alert.h"
 #include "alert/trigger/trigger.h"
 #include "alert/alerter.hpp"
-#include "queues.hpp"
 #include "tracking/light/tracking.h"
 #include "tracking/tracking.hpp"
-#include <ulid/ulid.hh>
-#include <json/json.h>
-#include <httplib.h>
-#include <cpp-base64/base64.h>
-#include "draw/draw.hpp"
 
 /**
  * @brief 启动所有任务
