@@ -1,16 +1,9 @@
-#include <iostream>
 #include <algorithm>
 #include <numeric>
 #include <opencv2/opencv.hpp>
-#include <rknn_api.h>
 #include <chrono>
-#include <fstream>
 #include <spdlog/spdlog.h>
 #include <argparse/argparse.hpp>
-#include <ulid/ulid.hh>
-#include <json/json.h>
-#include <httplib.h>
-#include <cpp-base64/base64.h>
 #include "queues.hpp"
 #include "stream/decoder/soft.h"
 #include "stream/decoder/decoder.hpp"
@@ -40,7 +33,7 @@
  * @param runners 任务列表
  */
 template<typename... RunnerType>
-void StartRunners(RunnerType&... runner)  // 可变模板参数列表真好玩
+void StartRunners(RunnerType&... runner)
 {
     std::array<Runner*, sizeof...(runner)> runners = {&runner...};
     // 启动所有任务
