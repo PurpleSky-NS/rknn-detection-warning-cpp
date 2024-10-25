@@ -125,8 +125,8 @@ int main(int argc, char const *argv[])
     // 追踪参数
     program.add_argument("--track_time_threshhold").default_value(1.0f).scan<'f', float>().help("设置追踪时间阈值（秒），每过一次这个时间会确认一次物体是否停留在画面中");
     program.add_argument("--track_enter_percent_threshhold").default_value(0.6f).scan<'f', float>().help("认为物体在画面中的检测比");
-    program.add_argument("--track_leave_percent_threshhold").default_value(0.f).help("认为物体不在画面中的检测比（设为0表示只要物体在一次时间阈值中任意出现在画面中一次即可）");
-    program.add_argument("--track_sim_threshhold").default_value(0.5f).help("追踪时，判断前后两帧两个物体是否是同一个物体的物体未知相似度，采用带权重的eiou算法，范围为0~1，数值越小，新一帧检测到的物体匹配到的概率越大");
+    program.add_argument("--track_leave_percent_threshhold").default_value(0.f).scan<'f', float>().help("认为物体不在画面中的检测比（设为0表示只要物体在一次时间阈值中任意出现在画面中一次即可）");
+    program.add_argument("--track_sim_threshhold").default_value(0.5f).scan<'f', float>().help("追踪时，判断前后两帧两个物体是否是同一个物体的物体未知相似度，采用带权重的eiou算法，范围为0~1，数值越小，新一帧检测到的物体匹配到的概率越大");
 
     // 报警参数
     program.add_argument("--alert_collect_url").required().help("报警收集地址");
