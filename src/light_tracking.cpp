@@ -15,10 +15,9 @@ LightTracking::LightTracking(const std::unordered_set<size_t> &trackClasses)
         _trackers[cid];
         _trackerIDs[cid] = 0;  // 物体ID从0开始
     }
-    // _existObjs = _trackers;
 }
 
-std::shared_ptr<TrackerWorld> LightTracking::Update(std::shared_ptr<ResultType> results, std::shared_ptr<cv::Mat> image)
+std::shared_ptr<TrackerWorld> LightTracking::operator()(std::shared_ptr<ResultType> results, std::shared_ptr<cv::Mat> image)
 {
     if(_trackers.empty())
         return std::make_shared<TrackerWorld>(_trackers);

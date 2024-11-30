@@ -2,6 +2,7 @@
 
 #include <future>
 #include "runner.hpp"
+#include "summary.hpp"
 
 // 负责启动一个线程将queue中的数据不断放入pusher中
 template<typename PusherType, typename QueueType>
@@ -12,7 +13,8 @@ public:
 
 protected:
     void Run(){
-        _pusher.Push(std::get<0>(_queue.Get(_queueId)));
+        _pusher(std::get<0>(_queue.Get(_queueId)));
+        fpsSummary.Count("Pusher");
     }
 private:
     PusherType &_pusher;

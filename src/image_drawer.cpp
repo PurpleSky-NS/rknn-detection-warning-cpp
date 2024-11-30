@@ -1,7 +1,8 @@
-#include "draw/opencv.h"
+#include "draw/image.h"
+#include "draw/draw.hpp"
 #include <fmt/core.h>
 
-OpencvDrawer::OpencvDrawer(const std::vector<Region> &regions, size_t w, size_t h)
+ImageDrawer::ImageDrawer(const std::vector<Region> &regions, const cv::Size &size)
 {
     if(!regions.empty()) {
         std::vector<std::vector<Point>> regionPts;
@@ -9,13 +10,13 @@ OpencvDrawer::OpencvDrawer(const std::vector<Region> &regions, size_t w, size_t 
             if(!region.GetRegion().empty())
                 regionPts.push_back(region.GetRegion());
         if(!regionPts.empty()){
-            _regionsMask = cv::Mat(h, w, CV_8UC3, {0, 0, 0});
+            _regionsMask = cv::Mat(size.height, size.width, CV_8UC3, {0, 0, 0});
             cv::fillPoly(_regionsMask, regionPts, {0, 165, 255});
         }
     }
 }
 
-std::shared_ptr<cv::Mat> OpencvDrawer::DrawFrame(std::shared_ptr<cv::Mat> frame, std::shared_ptr<TrackerWorld> trackingResults)
+std::shared_ptr<cv::Mat> ImageDrawer::operator()(std::shared_ptr<cv::Mat> frame, std::shared_ptr<TrackerWorld> trackingResults)
 {
     // 画框
     if(trackingResults){

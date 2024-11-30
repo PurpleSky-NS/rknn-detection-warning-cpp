@@ -11,9 +11,7 @@ public:
     DummyPuller(const DummyPuller&)=delete;
     DummyPuller(DummyPuller&&)=default;
     
-    //有下面两种方式获取帧
-    DummyPuller &operator>>(cv::Mat &frame);
-    std::shared_ptr<cv::Mat> Fetch();
+    std::shared_ptr<cv::Mat> operator()();
 
     //每次获取完帧之后，这个数会涨
     inline size_t GetFrameID()const;
@@ -36,19 +34,11 @@ inline DummyPuller::DummyPuller(const std::string &imagePath)
     _h = h;
 }
 
-DummyPuller &DummyPuller::operator>>(cv::Mat &frame)
+std::shared_ptr<cv::Mat> DummyPuller::operator()()
 {
-    frame = _image.clone();
-    ++_frameID;
     std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<uint>(1000 / GetFPS())));
-    return *this;
-}
-
-std::shared_ptr<cv::Mat> DummyPuller::Fetch()
-{
-    cv::Mat img;
-    *this >> img;
-    return std::make_shared<cv::Mat>(img);
+    ++_frameID;
+    return std::make_shared<cv::Mat>(_image.clone());
 }
 
 inline size_t DummyPuller::GetFrameID()const

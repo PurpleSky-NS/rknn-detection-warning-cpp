@@ -1,6 +1,7 @@
 #pragma once
 
 #include "runner.hpp"
+#include "summary.hpp"
 
 // 负责启动一个线程从帧队列里拉数据并用detector检测后放入resultQueue中
 template<typename AlerterType, typename TrackingFrameQueueType>
@@ -13,7 +14,8 @@ public:
 protected:
     void Run(){
         auto [trakingResult, frame] = _trackingFrameQueue.Get(_trackingFrameQueueId);
-        _alerter.Update(trakingResult, frame);
+        _alerter(trakingResult, frame);
+        fpsSummary.Count("Alerter");
     }
 private:
     AlerterType &_alerter;

@@ -7,14 +7,14 @@ class TriggerAlerter
 public:
     TriggerAlerter() = delete;
     TriggerAlerter(
-        const std::vector<std::string> &regionsInfo, size_t w, size_t h, 
+        const std::vector<std::string> &regionsInfo, const cv::Size &size, 
         const std::vector<std::string> &alertsInfo, const std::vector<std::string> &classes
     );
     TriggerAlerter(const TriggerAlerter &)=delete;
     TriggerAlerter(TriggerAlerter &&)=delete;
 
     // 更新所有区域
-    void Update(std::shared_ptr<TrackerWorld> trackers, std::shared_ptr<cv::Mat> image);
+    void operator()(std::shared_ptr<TrackerWorld> trackers, std::shared_ptr<cv::Mat> image);
 
     // 获取所有追踪类
     const std::unordered_set<size_t> &GetAlertClasses()const;

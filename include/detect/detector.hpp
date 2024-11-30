@@ -3,6 +3,7 @@
 #include <random>
 #include <memory>
 #include "runner.hpp"
+#include "summary.hpp"
 
 // 负责启动一个线程从帧队列里拉数据并用detector检测后放入ResultQueueType中
 template<typename DetectorType, typename FrameQueueType, typename ResultQueueType>
@@ -15,8 +16,10 @@ public:
 protected:
     void Run(){
         auto [frame] = _frameQueue.Get(_frameQueueId);
-        if(_frameQueueId.id % _skipFrame == 0)
-            _resultFrameQueue.Put(_detector.Detect(frame), frame);
+        if(_frameQueueId.id % _skipFrame == 0){
+            _resultFrameQueue.Put(_detector(frame), frame);
+            fpsSummary.Count("Detector");
+        }
     }
 private:
     DetectorType &_detector;

@@ -2,6 +2,7 @@
 #include <opencv2/opencv.hpp>
 #include "type.h"
 
+// Trigger和imageDrawer都需要绘图
 inline void DrawObject(cv::Mat &image, const Object &obj, const std::string &label = {}, const cv::Scalar &color={247, 200, 125})
 {
     cv::rectangle(image, {obj.box.x, obj.box.y}, {

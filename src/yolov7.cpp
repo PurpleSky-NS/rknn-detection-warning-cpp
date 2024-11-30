@@ -163,37 +163,6 @@ bool Yolov7::SetNMSThresh(float conf)
 }
 
 /**
- * @brief 在给定图像上进行目标检测
- *
- * 将输入图像进行预处理，并使用YOLOv7模型进行目标检测。
- *
- * @param image 输入图像
- *
- * @return 返回检测结果
- */
-ResultType Yolov7::Detect(const cv::Mat &image)
-{
-    static FPSCounter counter("目标检测");
-    counter.Update();
-
-    RecalcScale(image.size());
-    auto dstImage = Preprocess(image);
-    _input.buf = dstImage.data;
-    rknn_inputs_set(_modelCtx, 1, &_input);
-    rknn_run(_modelCtx, nullptr);
-
-    rknn_outputs_get(_modelCtx, _output.size(), _output.data(), nullptr);
-    if(_output.size() == 1){  // 只有一个输出，说明grid操作在模型里面
-        if(_isQuant)
-            return Postprocess4Grid<int8_t>();
-        return Postprocess4Grid<float16_t>();
-    }
-    if(_isQuant)
-        return Postprocess4Outs<int8_t>();
-    return Postprocess4Outs<float16_t>();
-}
-
-/**
  * @brief 检测图像中的目标
  *
  * 使用 YOLOv7 模型检测给定图像中的目标，并返回一个包含检测结果的智能指针。
@@ -202,9 +171,23 @@ ResultType Yolov7::Detect(const cv::Mat &image)
  *
  * @return 包含检测结果的智能指针
  */
-std::shared_ptr<ResultType> Yolov7::Detect(std::shared_ptr<const cv::Mat> image)
+std::shared_ptr<ResultType> Yolov7::operator()(std::shared_ptr<cv::Mat> image)
 {
-    return std::make_shared<ResultType>(Detect(*image));
+    RecalcScale(image->size());
+    auto dstImage = Preprocess(*image);
+    _input.buf = dstImage.data;
+    rknn_inputs_set(_modelCtx, 1, &_input);
+    rknn_run(_modelCtx, nullptr);
+
+    rknn_outputs_get(_modelCtx, _output.size(), _output.data(), nullptr);
+    if(_output.size() == 1){  // 只有一个输出，说明grid操作在模型里面
+        if(_isQuant)
+            return std::make_shared<ResultType>(Postprocess4Grid<int8_t>());
+        return std::make_shared<ResultType>(Postprocess4Grid<float16_t>());
+    }
+    if(_isQuant)
+        return std::make_shared<ResultType>(Postprocess4Outs<int8_t>());
+    return std::make_shared<ResultType>(Postprocess4Outs<float16_t>());
 }
 
 /**

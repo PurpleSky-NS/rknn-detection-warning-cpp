@@ -4,7 +4,7 @@
 #include <spdlog/spdlog.h>
 
 TriggerAlerter::TriggerAlerter(
-    const std::vector<std::string> &regionsInfo, size_t w, size_t h, 
+    const std::vector<std::string> &regionsInfo, const cv::Size &size, 
     const std::vector<std::string> &alertsInfo, const std::vector<std::string> &classes
 )
 {
@@ -29,11 +29,11 @@ TriggerAlerter::TriggerAlerter(
         // 区域的信息为归一化的x1,y1,x2,y2...
         for(int i=0; i<region.size(); ++i){
             if(i%2){
-                point.y = static_cast<int>(region[i].asFloat() * h);
+                point.y = static_cast<int>(region[i].asFloat() * size.height);
                 regionPoints.push_back(point);
             }
             else
-                point.x = static_cast<int>(region[i].asFloat() * w);
+                point.x = static_cast<int>(region[i].asFloat() * size.width);
         }
         regionMap[name] = _regions.size();
         _regions.emplace_back(name, regionPoints);
@@ -76,7 +76,7 @@ TriggerAlerter::TriggerAlerter(
         );
 }
 
-void TriggerAlerter::Update(std::shared_ptr<TrackerWorld> trackerWorld, std::shared_ptr<cv::Mat> image)
+void TriggerAlerter::operator()(std::shared_ptr<TrackerWorld> trackerWorld, std::shared_ptr<cv::Mat> image)
 {
     for(auto &region: _regions)
         region.Update(trackerWorld, image);

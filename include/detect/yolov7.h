@@ -35,8 +35,7 @@ public:
     /** 设置NMS过滤的IOU阈值 */
     bool SetNMSThresh(float conf);
 
-    ResultType Detect(const cv::Mat &image);
-    std::shared_ptr<ResultType> Detect(std::shared_ptr<const cv::Mat> image);
+    std::shared_ptr<ResultType> operator()(std::shared_ptr<cv::Mat> image);
 
 private:
     using Scale = std::tuple<double, cv::Size, cv::Vec4w>;

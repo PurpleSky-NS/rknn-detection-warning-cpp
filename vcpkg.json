@@ -5,14 +5,25 @@
     "cpp-httplib",
     "jsoncpp",
     "spdlog",
-    "ffmpeg",
+    {
+      "name": "ffmpeg",
+      "default-features": false,
+      "features": [
+        "x264",
+        "x265",
+        "avfilter",
+        "avformat",
+        "avcodec",
+        "avdevice",
+        "swresample",
+        "swscale"
+      ]
+    },
     {
       "name": "opencv4",
       "default-features": false,
       "features": [
-        "jpeg",
-        "png",
-        "ffmpeg"
+        "jpeg"
       ]
     }
   ]

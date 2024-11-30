@@ -66,7 +66,7 @@ public:
     void Put(std::shared_ptr<Tps>... svalues){
         std::unique_lock<std::shared_mutex> lock(_mutex);
         if(_valueQueue.size() == MAX_SIZE){
-            spdlog::debug("数据队列已达到上限[{}]，清空所有缓存的数据", MAX_SIZE);
+            spdlog::debug("数据队列已达到上限[{}]，清空所有缓存的数据", "MAX_SIZE");
             _valueQueue.clear();
             _id.id += MAX_SIZE;
         }

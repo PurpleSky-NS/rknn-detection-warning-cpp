@@ -1,6 +1,7 @@
 #pragma once
 #include <type_traits>
 #include "runner.hpp"
+#include "summary.hpp"
 
 // 负责启动一个线程将pktQueue的数据解码后放入frameQueue中
 template<typename DecoderType, typename PacketQueueType, typename FrameQueueType>
@@ -14,9 +15,10 @@ public:
 
 protected:
     void Run(){
-        auto frame = _decoder.Decode(std::get<0>(_packetQueue.Get(_packetQueueId)));
+        auto frame = _decoder(std::get<0>(_packetQueue.Get(_packetQueueId)));
         if(frame)
             _frameQueue.Put(frame);
+        fpsSummary.Count("Decoder");
     }
 private:
     DecoderType &_decoder;
