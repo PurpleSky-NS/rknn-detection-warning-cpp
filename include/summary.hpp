@@ -31,6 +31,7 @@ inline void FPSSummary::Count(const std::string& module)
 
 inline void FPSSummary::Run()
 {
+    std::this_thread::sleep_for(std::chrono::seconds(_interval));
     {
         std::lock_guard<std::mutex> lock(_mutex);
         std::string summary;
@@ -42,5 +43,4 @@ inline void FPSSummary::Run()
         }
         spdlog::info("各模块FPS统计信息[{}s平均]: [{}]", _interval, summary);
     }
-    std::this_thread::sleep_for(std::chrono::seconds(_interval));
 }
