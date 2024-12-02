@@ -9,7 +9,7 @@
 #include <spdlog/spdlog.h>
 
 
-/** 父类的东西，子类不using就报错？*/
+/** 所有队列的父类 **/
 template<typename... Tps>
 class BaseQueue
 {
@@ -32,6 +32,9 @@ public:
     
     /** 放入数据，使用shared_ptr避免底层数据多次拷贝（比起让底层数据自己实现拷贝/移动操作，这么做更好）*/
     virtual void Put(std::shared_ptr<Tps>... svalues) = 0;
+    
+    /** 放入空数据，以唤醒在队列上等待的线程*/
+    virtual void Put() = 0;
     
     /** 阻塞取出数据，返回一个tuple，可自取需要的数据*/
     virtual ValueTupleType Get(DataID &id) = 0;
@@ -73,7 +76,11 @@ public:
         _valueQueue.emplace_back(std::move(svalues)...);
         _condForNew.notify_all();
     }
-    
+
+    void Put(){
+        Put(std::shared_ptr<Tps>()...);
+    }
+
     ValueTupleType Get(DataID &id){
         std::shared_lock<std::shared_mutex> lock(_mutex);
         if(_valueQueue.empty())
@@ -128,7 +135,11 @@ public:
         ++_id.id;
         _condForNew.notify_all();
     }
-    
+
+    void Put(){
+        Put(std::shared_ptr<Tps>()...);
+    }
+
     ValueTupleType Get(DataID &id){
         std::shared_lock<std::shared_mutex> lock(_mutex);
         if(id.id == _id.id)

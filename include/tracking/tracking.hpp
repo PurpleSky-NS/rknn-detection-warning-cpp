@@ -1,5 +1,5 @@
 #pragma once
-#include "runner.hpp"
+#include "runner.h"
 #include "summary.hpp"
 
 // 负责启动一个线程从帧队列里拉数据并用detector检测后放入resultQueue中
@@ -8,13 +8,12 @@ class Tracking: public Runner
 {
 public:
     Tracking(TrackingType &tracking, ResultFrameQueueType &resultFrameQueue, TrackingFrameQueueType &trackingFrameQueue): 
-        _tracking(tracking), _resultFrameQueue(resultFrameQueue), _trackingFrameQueue(trackingFrameQueue) {}
+        Runner("跟踪系统"), _tracking(tracking), _resultFrameQueue(resultFrameQueue), _trackingFrameQueue(trackingFrameQueue) {}
 
 protected:
     void Run(){
-        auto [result, frame] = _resultFrameQueue.Get(_resultFrameQueueId);
-        _trackingFrameQueue.Put(_tracking(result, frame), frame);
-        fpsSummary.Count("Tracking");
+        if(auto [result, frame] = _resultFrameQueue.Get(_resultFrameQueueId); result && frame)
+            _trackingFrameQueue.Put(_tracking(result, frame), frame);
     }
 private:
     TrackingType &_tracking;

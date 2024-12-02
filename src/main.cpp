@@ -1,3 +1,4 @@
+#include <csignal>
 #include <spdlog/spdlog.h>
 #include <argparse/argparse.hpp>
 #include "queues.hpp"
@@ -20,6 +21,11 @@
 #include "tracking/light/tracking.h"
 #include "tracking/tracking.hpp"
 
+/* 注册的所有Runner */
+std::vector<Runner*> runners;
+/* 向所有队列中放一个空数据，以唤醒等待的线程 */
+std::function<void()> queuesStop;
+
 cv::Size GetFinalSize(const std::string &resolution, cv::Size def)
 {
     if(resolution.empty())
@@ -34,20 +40,48 @@ cv::Size GetFinalSize(const std::string &resolution, cv::Size def)
 }
 
 /**
+ * @brief 添加多个任务
+ *
+ * 将任务添加至任务列表中
+ *
+ * @param runner 多个任务对象
+ */
+template<typename... RunnerType>
+void AddRunners(RunnerType&... runner)
+{
+    runners.insert(runners.end(), {&runner...});
+}
+
+/**
  * @brief 启动所有任务
  *
  * 遍历给定的任务列表，依次启动每个任务，并等待它们完成。
  *
  * @param runners 任务列表
  */
-template<typename... RunnerType>
-void StartRunners(RunnerType&... runner)
+void StartRunners()
 {
-    std::array<Runner*, sizeof...(runner)> runners = {&runner...};
     // 启动所有任务
     std::for_each(runners.begin(), runners.end(), [](auto runner){runner->Start();});
     // 等待所有任务结束
     std::for_each(runners.begin(), runners.end(), [](auto runner){runner->Wait();});
+}
+
+/* 注册所有队列的空数据Put回调 */
+template<typename... QueuesType>
+void RegisterQueues(QueuesType&... queues)
+{
+    queuesStop = [&](){
+        (queues.Put(), ...);
+    };
+}
+
+/* 停止所有任务，唤醒所有等待线程 */
+void Exit(int sig)
+{
+    spdlog::info("程序收到退出信号:{}，正在退出...", sig);
+    std::for_each(runners.begin(), runners.end(), [](auto runner){runner->Stop();});
+    queuesStop();
 }
 
 template<typename DetectorType>
@@ -69,9 +103,10 @@ void StartWithBaseDrawMode(DetectorType &detector, const argparse::ArgumentParse
     SQueue<cv::Mat> inputSQ, outputSQ;
     SQueue<ResultType, cv::Mat> resultFrameSQ;
     SQueue<TrackerWorld, cv::Mat> trackingFrameSQ;
+    RegisterQueues(decodePktTQ, inputSQ, outputSQ, resultFrameSQ, trackingFrameSQ);
 
     // 声明任务线程对象
-    Puller<decltype(puller), decltype(decodePktTQ)> tpuller(puller, decodePktTQ);
+    // Puller<decltype(puller), decltype(decodePktTQ)> tpuller(puller, decodePktTQ);
     Pusher<decltype(pusher), decltype(outputSQ)> tpusher(pusher, outputSQ);
     Decoder<decltype(decoder), decltype(decodePktTQ), decltype(inputSQ)> tdecoder(decoder, decodePktTQ, inputSQ);
     Detector<DetectorType, decltype(inputSQ), decltype(resultFrameSQ)> tdetector(detector, inputSQ, resultFrameSQ, program.get<uint>("skip_frame"));
@@ -79,7 +114,9 @@ void StartWithBaseDrawMode(DetectorType &detector, const argparse::ArgumentParse
     Drawer<decltype(drawer), decltype(trackingFrameSQ), decltype(inputSQ), decltype(outputSQ)> tdrawer(drawer, trackingFrameSQ, inputSQ, outputSQ);
     Alerter<decltype(alerter), decltype(trackingFrameSQ)> talerter(alerter, trackingFrameSQ);
 
-    StartRunners(tpuller, tpusher, tdecoder, tdetector, ttracking, tdrawer, talerter);
+    // AddRunners(tpuller, tpusher, tdecoder, tdetector, ttracking, tdrawer, talerter);
+    AddRunners(tpusher, tdecoder, tdetector, ttracking, tdrawer, talerter);
+    StartRunners();
 }
 
 template<typename DetectorType>
@@ -109,7 +146,8 @@ void StartWithBaseNoDrawMode(DetectorType &detector, const argparse::ArgumentPar
     Tracking<decltype(tracking), decltype(resultFrameSQ), decltype(trackingFrameSQ)> ttracking(tracking, resultFrameSQ, trackingFrameSQ);
     Alerter<decltype(alerter), decltype(trackingFrameSQ)> talerter(alerter, trackingFrameSQ);
 
-    StartRunners(tpuller, tpusher, tdecoder, tdetector, ttracking, talerter);
+    AddRunners(tpuller, tpusher, tdecoder, tdetector, ttracking, talerter);
+    StartRunners();
 }
 
 template<typename DetectorType>
@@ -140,7 +178,8 @@ void StartWithForwardMode(DetectorType &detector, const argparse::ArgumentParser
     Tracking<decltype(tracking), decltype(resultFrameSQ), decltype(trackingFrameSQ)> ttracking(tracking, resultFrameSQ, trackingFrameSQ);
     Alerter<decltype(alerter), decltype(trackingFrameSQ)> talerter(alerter, trackingFrameSQ);
 
-    StartRunners(tpuller, tpusher, tdecoder, tdetector, ttracking, talerter);
+    AddRunners(tpuller, tpusher, tdecoder, tdetector, ttracking, talerter);
+    StartRunners();
 }
 
 template<typename DetectorType>
@@ -168,7 +207,8 @@ void StartWithServiceMode(DetectorType &detector, const argparse::ArgumentParser
     Tracking<decltype(tracking), decltype(resultFrameSQ), decltype(trackingFrameSQ)> ttracking(tracking, resultFrameSQ, trackingFrameSQ);
     Alerter<decltype(alerter), decltype(trackingFrameSQ)> talerter(alerter, trackingFrameSQ);
 
-    StartRunners(tpuller, tdecoder, tdetector, ttracking, talerter);
+    AddRunners(tpuller, tdecoder, tdetector, ttracking, talerter);
+    StartRunners();
 }
 
 int main(int argc, char const *argv[])
@@ -229,34 +269,55 @@ int main(int argc, char const *argv[])
     else
         spdlog::set_level(spdlog::level::info);
 
-    Yolov7 detector(program.get("model"));
-    detector.SetAnchors(program.get("anchors_file"));
-    detector.SetClasses(program.get("classes_file"));
-    detector.SetObjThresh(program.get<float>("obj_thresh"));
-    detector.SetNMSThresh(program.get<float>("nms_thresh"));
+    try{
+        Yolov7 detector(program.get("model"));
+        detector.SetAnchors(program.get("anchors_file"));
+        detector.SetClasses(program.get("classes_file"));
+        detector.SetObjThresh(program.get<float>("obj_thresh"));
+        detector.SetNMSThresh(program.get<float>("nms_thresh"));
 
-    // 设置目标追踪参数
-    LightTracker::SetTrackTimeThreshhold(std::chrono::milliseconds(static_cast<uint>(program.get<float>("track_time_threshhold") * 1000)));
-    LightTracker::SetTrackEnterPercentThreshhold(program.get<float>("track_enter_percent_threshhold"));
-    LightTracker::SetTrackLeavePercentThreshhold(program.get<float>("track_leave_percent_threshhold"));
-    LightTracking::SetTrackSimThreshhold(program.get<float>("track_sim_threshhold"));
-    // 设置事件触发器参数
-    Trigger::SetAlertUrl(program.get("alert_collect_url"));  // 设置报警Url
-    Trigger::SetDrawBox(!program.get<bool>("disable_draw_alert_box"));  // 设置是否绘制报警框
+        // 设置目标追踪参数
+        LightTracker::SetTrackTimeThreshhold(std::chrono::milliseconds(static_cast<uint>(program.get<float>("track_time_threshhold") * 1000)));
+        LightTracker::SetTrackEnterPercentThreshhold(program.get<float>("track_enter_percent_threshhold"));
+        LightTracker::SetTrackLeavePercentThreshhold(program.get<float>("track_leave_percent_threshhold"));
+        LightTracking::SetTrackSimThreshhold(program.get<float>("track_sim_threshhold"));
+        // 设置事件触发器参数
+        Trigger::SetAlertUrl(program.get("alert_collect_url"));  // 设置报警Url
+        Trigger::SetDrawBox(!program.get<bool>("disable_draw_alert_box"));  // 设置是否绘制报警框
 
-    fpsSummary.Start();
-    if(program.get<bool>("disable_pusher")){
-        StartWithServiceMode(detector, program);
-    }
-    else{
-        if(program.get<bool>("enable_draw_video_box"))
-            StartWithBaseDrawMode(detector, program);
-        else{
-            if(auto source = program.get("input"); std::all_of(source.begin(), source.end(), [](const auto &ch){return isdigit(ch);}))
-                StartWithBaseNoDrawMode(detector, program);  // rawvideo和flv容器格式不兼容，USB摄像头进入基础无绘图模式
-            else
-                StartWithForwardMode(detector, program);  // 视频流直接进入数据包转发模式减少开销
+        signal(SIGINT, Exit);
+        signal(SIGTERM, Exit);
+
+        /***************************************************************************/
+        class Stoper: public Runner{
+            public:
+            Stoper(): Runner("Stopper") {}
+            private:
+            void Run() override {
+                std::this_thread::sleep_for(std::chrono::seconds(2));
+                Exit(15);
+            }};
+        Stoper stoper;
+        AddRunners(stoper);
+        /***************************************************************************/
+        AddRunners(fpsSummary);
+        if(program.get<bool>("disable_pusher")){
+            StartWithServiceMode(detector, program);
         }
+        else{
+            if(program.get<bool>("enable_draw_video_box"))
+                StartWithBaseDrawMode(detector, program);
+            else{
+                if(auto source = program.get("input"); std::all_of(source.begin(), source.end(), [](const auto &ch){return isdigit(ch);}))
+                    StartWithBaseNoDrawMode(detector, program);  // rawvideo和flv容器格式不兼容，USB摄像头进入基础无绘图模式
+                else
+                    StartWithForwardMode(detector, program);  // 视频流直接进入数据包转发模式减少开销
+            }
+        }
+    }
+    catch (const std::exception& err) {
+        spdlog::critical("程序异常退出：{}", err.what());
+        return 1;
     }
     return 0; 
 }

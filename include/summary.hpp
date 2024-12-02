@@ -3,12 +3,14 @@
 #include <unordered_map>
 #include <mutex>
 #include <spdlog/spdlog.h>
-#include "runner.hpp"
+#include "runner.h"
 
 // 模块信息统计器
 class FPSSummary: public Runner
 {
 public:
+    FPSSummary(): Runner("FPS统计器") {}
+
     /* 更新某模块FPS */
     void Count(const std::string& module);
 

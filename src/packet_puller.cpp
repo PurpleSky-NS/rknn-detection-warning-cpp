@@ -3,7 +3,7 @@
 #include <spdlog/spdlog.h>
 #include "summary.hpp"
 
-PacketPuller::PacketPuller(std::string source): _timeoutMonitor(60, [](){
+PacketPuller::PacketPuller(std::string source): _timeoutMonitor("数据包拉流监控器", 60, [](){
     spdlog::critical("拉取视频流超时，视频帧拉取失败");
     throw std::runtime_error("视频帧拉取失败");
 })
@@ -55,6 +55,7 @@ PacketPuller::PacketPuller(std::string source): _timeoutMonitor(60, [](){
 
 PacketPuller::~PacketPuller()
 {
+    _timeoutMonitor.Stop();
     avformat_close_input(&_fmtCtx);
 }
 

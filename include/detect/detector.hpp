@@ -2,7 +2,7 @@
 
 #include <random>
 #include <memory>
-#include "runner.hpp"
+#include "runner.h"
 #include "summary.hpp"
 
 // 负责启动一个线程从帧队列里拉数据并用detector检测后放入ResultQueueType中
@@ -11,15 +11,15 @@ class Detector: public Runner
 {
 public:
     Detector(DetectorType &detector, FrameQueueType &frameQueue, ResultQueueType &resultFrameQueue, uint skipFrame = 1): 
-        _detector(detector), _frameQueue(frameQueue), _resultFrameQueue(resultFrameQueue), _skipFrame(skipFrame) {}
+        Runner("检测器"), _detector(detector), _frameQueue(frameQueue), _resultFrameQueue(resultFrameQueue), _skipFrame(skipFrame) {}
 
 protected:
     void Run(){
-        auto [frame] = _frameQueue.Get(_frameQueueId);
-        if(_frameQueueId.id % _skipFrame == 0){
-            _resultFrameQueue.Put(_detector(frame), frame);
-            fpsSummary.Count("Detector");
-        }
+        if(auto [frame] = _frameQueue.Get(_frameQueueId); frame)
+            if(_frameQueueId.id % _skipFrame == 0){
+                _resultFrameQueue.Put(_detector(frame), frame);
+                fpsSummary.Count("Detector");
+            }
     }
 private:
     DetectorType &_detector;
