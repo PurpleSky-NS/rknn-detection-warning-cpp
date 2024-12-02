@@ -97,6 +97,7 @@ ImagePusher::ImagePusher(const std::string &output, const cv::Size &size, double
 ImagePusher::~ImagePusher()
 {
     av_write_trailer(_outputFmtCtx);
+    avio_close(_outputFmtCtx->pb);
     av_frame_free(&_frameYUV);
     avcodec_free_context(&_codecCtx);
     avformat_free_context(_outputFmtCtx);

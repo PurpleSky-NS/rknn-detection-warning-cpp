@@ -56,6 +56,8 @@ PacketPusher::PacketPusher(const PacketPuller &pktPuller, const std::string &out
 
 PacketPusher::~PacketPusher()
 {
+    av_write_trailer(_outputFmtCtx);
+    avio_close(_outputFmtCtx->pb);
     avformat_free_context(_outputFmtCtx);
 }
 
@@ -79,4 +81,5 @@ void PacketPusher::operator()(std::shared_ptr<AVPacket> pkt)
         spdlog::error("写入数据包时出错：{}", errBuf);
         throw std::runtime_error("推流失败");
     }
+    av_packet_unref(&nPkt);
 }

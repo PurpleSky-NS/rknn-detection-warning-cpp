@@ -298,7 +298,7 @@ int main(int argc, char const *argv[])
             if(program.get<bool>("enable_draw_video_box"))
                 StartWithBaseDrawMode(detector, program);
             else{
-                if(auto source = program.get("input"); std::all_of(source.begin(), source.end(), [](const auto &ch){return isdigit(ch);}))
+                if(auto source = program.get("input"); source.find("://") == std::string::npos)
                     StartWithBaseNoDrawMode(detector, program);  // rawvideo和flv容器格式不兼容，USB摄像头进入基础无绘图模式
                 else
                     StartWithForwardMode(detector, program);  // 视频流直接进入数据包转发模式减少开销

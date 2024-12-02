@@ -84,6 +84,11 @@ Yolov7::Yolov7(const std::string &modelPath)
         _classes[i] = std::to_string(i);
 }
 
+Yolov7::~Yolov7()
+{
+    rknn_destroy(_modelCtx);
+}
+
 bool Yolov7::SetClasses(const std::vector<std::string>& classes)
 {
     if(classes.size() != _classes.size())

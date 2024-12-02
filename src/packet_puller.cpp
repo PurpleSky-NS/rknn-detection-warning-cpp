@@ -1,7 +1,6 @@
 #include "stream/puller/packet.h"
 #include <chrono>
 #include <spdlog/spdlog.h>
-#include "summary.hpp"
 
 PacketPuller::PacketPuller(std::string source): _timeoutMonitor("数据包拉流监控器", 60, [](){
     spdlog::critical("拉取视频流超时，视频帧拉取失败");
@@ -9,9 +8,10 @@ PacketPuller::PacketPuller(std::string source): _timeoutMonitor("数据包拉流
 })
 {
     char errBuf[1024];
-    if(std::all_of(source.begin(), source.end(), [](const auto &ch){return isdigit(ch);})){
+    if(source.find("://") == std::string::npos){
         avdevice_register_all();
-        source = "/dev/video" + source;
+        if(std::all_of(source.begin(), source.end(), [](const auto &ch){return isdigit(ch);}))
+            source = "/dev/video" + source;
     }
     //=========================== 创建AVFormatContext结构体 ===============================//
     _fmtCtx = avformat_alloc_context();
@@ -61,8 +61,9 @@ PacketPuller::~PacketPuller()
 
 std::shared_ptr<AVPacket> PacketPuller::operator()()
 {
-    auto pkt = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *p){av_packet_unref(p);av_packet_free(&p);});
+    auto pkt = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *p){av_packet_free(&p);});
     do{
+        av_packet_unref(pkt.get());
         if(av_read_frame(_fmtCtx, pkt.get()) < 0){
             spdlog::critical("读取视频流失败");
             throw std::runtime_error("读取视频流失败");

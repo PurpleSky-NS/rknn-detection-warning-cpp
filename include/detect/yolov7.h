@@ -14,6 +14,8 @@ public:
 
     Yolov7(const std::string &modelPath);
 
+    ~Yolov7();
+
     /** 设置类别名称 */
     bool SetClasses(const std::vector<std::string>& classes);
 
@@ -47,7 +49,7 @@ private:
     rknn_input _input;
     // 输出
     std::vector<rknn_output> _output;  // rknn输出结构体
-    std::vector<std::shared_ptr<void>> _outputBuf;  // 输出的预分配内存
+    std::vector<std::shared_ptr<uint8_t[]>> _outputBuf;  // 输出的预分配内存
     std::vector<rknn_tensor_attr> _outputInfo;  // 输出的信息（主要是如果有量化则需要scale和zp俩数据）
 
     std::vector<std::string> _classes;
