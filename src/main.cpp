@@ -41,7 +41,7 @@ cv::Size GetFinalSize(const std::string &resolution, cv::Size def)
  * @param runners 任务列表
  */
 template<typename... RunnerType>
-void StartRunners(RunnerType&... runner)  // 可变模板参数列表真好玩
+void StartRunners(RunnerType&... runner)
 {
     std::array<Runner*, sizeof...(runner)> runners = {&runner...};
     // 启动所有任务

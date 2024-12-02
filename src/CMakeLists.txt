@@ -4,14 +4,12 @@ add_executable(main ${SRC_LIST})
 find_package(FFMPEG MODULE)
 target_include_directories(main PRIVATE ${FFMPEG_INCLUDE_DIRS})
 target_link_directories(main PRIVATE ${FFMPEG_LIBRARY_DIRS})
-# target_link_libraries(main PRIVATE avfilter avformat avcodec avutil swresample avdevice swscale)
 target_link_libraries(main PRIVATE ${FFMPEG_LIBRARIES})
 
 find_package(spdlog CONFIG REQUIRED)
 target_link_libraries(main PRIVATE spdlog::spdlog)
 
 find_package(OpenCV REQUIRED)
-message(STATUS "OpenCV version: ${OpenCV_VERSION}")
 include_directories(${OpenCV_INCLUDE_DIRS})
 target_link_libraries(main PRIVATE ${OpenCV_LIBS})
 
@@ -39,8 +37,3 @@ aux_source_directory(${CPP_BASE64_SOURCE_DIR}/cpp-base64 CPP_BASE64_SOURCE)
 target_sources(main PRIVATE ${CPP_BASE64_SOURCE})
 
 target_link_libraries(main PRIVATE pthread librknn_api.so)
-
-# add_executable(test test.cpp api.cpp)  
-# target_link_libraries(test PRIVATE spdlog::spdlog)
-# target_link_libraries(test PRIVATE JsonCpp::JsonCpp)
-# target_link_libraries(test PRIVATE httplib::httplib)
