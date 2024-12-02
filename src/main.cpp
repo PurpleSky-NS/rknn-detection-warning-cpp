@@ -290,18 +290,6 @@ int main(int argc, char const *argv[])
         signal(SIGINT, Exit);
         signal(SIGTERM, Exit);
 
-        /***************************************************************************/
-        class Stoper: public Runner{
-            public:
-            Stoper(): Runner("Stopper") {}
-            private:
-            void Run() override {
-                std::this_thread::sleep_for(std::chrono::seconds(2));
-                Exit(15);
-            }};
-        Stoper stoper;
-        AddRunners(stoper);
-        /***************************************************************************/
         AddRunners(fpsSummary);
         if(program.get<bool>("disable_pusher")){
             StartWithServiceMode(detector, program);
