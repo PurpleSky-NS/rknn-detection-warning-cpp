@@ -106,7 +106,7 @@ void StartWithBaseDrawMode(DetectorType &detector, const argparse::ArgumentParse
     RegisterQueues(decodePktTQ, inputSQ, outputSQ, resultFrameSQ, trackingFrameSQ);
 
     // 声明任务线程对象
-    // Puller<decltype(puller), decltype(decodePktTQ)> tpuller(puller, decodePktTQ);
+    Puller<decltype(puller), decltype(decodePktTQ)> tpuller(puller, decodePktTQ);
     Pusher<decltype(pusher), decltype(outputSQ)> tpusher(pusher, outputSQ);
     Decoder<decltype(decoder), decltype(decodePktTQ), decltype(inputSQ)> tdecoder(decoder, decodePktTQ, inputSQ);
     Detector<DetectorType, decltype(inputSQ), decltype(resultFrameSQ)> tdetector(detector, inputSQ, resultFrameSQ, program.get<uint>("skip_frame"));
@@ -114,8 +114,7 @@ void StartWithBaseDrawMode(DetectorType &detector, const argparse::ArgumentParse
     Drawer<decltype(drawer), decltype(trackingFrameSQ), decltype(inputSQ), decltype(outputSQ)> tdrawer(drawer, trackingFrameSQ, inputSQ, outputSQ);
     Alerter<decltype(alerter), decltype(trackingFrameSQ)> talerter(alerter, trackingFrameSQ);
 
-    // AddRunners(tpuller, tpusher, tdecoder, tdetector, ttracking, tdrawer, talerter);
-    AddRunners(tpusher, tdecoder, tdetector, ttracking, tdrawer, talerter);
+    AddRunners(tpuller, tpusher, tdecoder, tdetector, ttracking, tdrawer, talerter);
     StartRunners();
 }
 
@@ -137,6 +136,7 @@ void StartWithBaseNoDrawMode(DetectorType &detector, const argparse::ArgumentPar
     SQueue<cv::Mat> frameSQ;
     SQueue<ResultType, cv::Mat> resultFrameSQ;
     SQueue<TrackerWorld, cv::Mat> trackingFrameSQ;
+    RegisterQueues(decodePktTQ, frameSQ, resultFrameSQ, trackingFrameSQ);
 
     // 声明任务线程对象
     Puller<decltype(puller), decltype(decodePktTQ)> tpuller(puller, decodePktTQ);
@@ -169,6 +169,7 @@ void StartWithForwardMode(DetectorType &detector, const argparse::ArgumentParser
     SQueue<cv::Mat> frameSQ;
     SQueue<ResultType, cv::Mat> resultFrameSQ;
     SQueue<TrackerWorld, cv::Mat> trackingFrameSQ;
+    RegisterQueues(outputPktTQ, decodePktTQ, frameSQ, resultFrameSQ, trackingFrameSQ);
 
     // 声明任务线程对象
     Puller<decltype(puller), decltype(pktDispatcher)> tpuller(puller, pktDispatcher);
@@ -199,6 +200,7 @@ void StartWithServiceMode(DetectorType &detector, const argparse::ArgumentParser
     SQueue<cv::Mat> frameSQ;
     SQueue<ResultType, cv::Mat> resultFrameSQ;
     SQueue<TrackerWorld, cv::Mat> trackingFrameSQ;
+    RegisterQueues(decodePktTQ, frameSQ, resultFrameSQ, trackingFrameSQ);
 
     // 声明任务线程对象
     Puller<decltype(puller), decltype(decodePktTQ)> tpuller(puller, decodePktTQ);
